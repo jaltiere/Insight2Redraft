@@ -209,9 +209,10 @@ def downgrade() -> None:
     op.drop_table('player_stat_cache')
     op.drop_table('player')
     op.drop_table('owner')
-    # Drop PostgreSQL ENUM types not removed by drop_table
-    sa.Enum(name='qualified_via').drop(op.get_bind(), checkfirst=True)
-    sa.Enum(name='bracket_status').drop(op.get_bind(), checkfirst=True)
-    sa.Enum(name='season_status').drop(op.get_bind(), checkfirst=True)
-    sa.Enum(name='account_role').drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###
+    # Drop PostgreSQL ENUM types not removed by drop_table
+    bind = op.get_context().connection
+    sa.Enum(name='qualified_via').drop(bind, checkfirst=True)
+    sa.Enum(name='bracket_status').drop(bind, checkfirst=True)
+    sa.Enum(name='season_status').drop(bind, checkfirst=True)
+    sa.Enum(name='account_role').drop(bind, checkfirst=True)
