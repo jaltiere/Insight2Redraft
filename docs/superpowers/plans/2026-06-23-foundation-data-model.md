@@ -744,6 +744,9 @@ git commit -m "feat: add competition tables and league admin grant"
 - [ ] **Step 1: Create `backend/app/models/scoring.py`**
 
 ```python
+from decimal import Decimal
+from typing import Any
+
 from sqlalchemy import (
     Boolean,
     ForeignKey,
@@ -767,9 +770,9 @@ class WeeklyScore(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     team_id: Mapped[int] = mapped_column(ForeignKey("team.id", ondelete="CASCADE"))
     week: Mapped[int] = mapped_column(Integer)
-    sleeper_points: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
-    recomputed_points: Mapped[float | None] = mapped_column(Numeric(10, 2))
-    bench_points: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    sleeper_points: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0)
+    recomputed_points: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    bench_points: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     mismatch_flag: Mapped[bool] = mapped_column(Boolean, default=False)
     is_final: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -796,7 +799,7 @@ class PlayerStatCache(Base):
     sleeper_player_id: Mapped[str] = mapped_column(String(50))
     season: Mapped[int] = mapped_column(Integer)
     week: Mapped[int] = mapped_column(Integer)
-    stats: Mapped[dict] = mapped_column(JSON, default=dict)
+    stats: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 ```
 
 - [ ] **Step 2: Update `backend/app/models/__init__.py`** to import scoring models
@@ -902,6 +905,7 @@ git commit -m "feat: add scoring tables (weekly_score, player, player_stat_cache
 
 ```python
 import enum
+from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
@@ -965,8 +969,8 @@ class BracketMatchup(Base):
     nfl_week: Mapped[int] = mapped_column(Integer)
     team_a_id: Mapped[int | None] = mapped_column(ForeignKey("team.id", ondelete="SET NULL"))
     team_b_id: Mapped[int | None] = mapped_column(ForeignKey("team.id", ondelete="SET NULL"))
-    team_a_score: Mapped[float | None] = mapped_column(Numeric(10, 2))
-    team_b_score: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    team_a_score: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    team_b_score: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     winner_team_id: Mapped[int | None] = mapped_column(ForeignKey("team.id", ondelete="SET NULL"))
     is_finalized: Mapped[bool] = mapped_column(Boolean, default=False)
     bye: Mapped[bool] = mapped_column(Boolean, default=False)
