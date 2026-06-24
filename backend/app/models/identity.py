@@ -54,3 +54,14 @@ class Account(Base, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[AccountRole] = mapped_column(Enum(AccountRole, name="account_role"))
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("owner.id", ondelete="SET NULL"))
+
+
+class LeagueAdminGrant(Base):
+    __tablename__ = "league_admin_grant"
+    __table_args__ = (
+        UniqueConstraint("account_id", "league_id", name="uq_league_admin_grant"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("account.id", ondelete="CASCADE"))
+    league_id: Mapped[int] = mapped_column(ForeignKey("league.id", ondelete="CASCADE"))
