@@ -14,6 +14,13 @@ from app.models.competition import (
     Team,
 )
 from app.models.scoring import Player, PlayerStatCache, WeeklyScore
+from app.models.bracket import (
+    Bracket,
+    BracketMatchup,
+    BracketSeed,
+    BracketStatus,
+    QualifiedVia,
+)
 
 __all__ = [
     "Base",
@@ -31,4 +38,9 @@ __all__ = [
     "Player",
     "PlayerStatCache",
     "WeeklyScore",
+    "Bracket",
+    "BracketMatchup",
+    "BracketSeed",
+    "BracketStatus",
+    "QualifiedVia",
 ]
