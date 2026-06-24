@@ -13,6 +13,7 @@ from app.models.competition import (
     ScoringRuleset,
     Team,
 )
+from app.models.scoring import Player, PlayerStatCache, WeeklyScore
 
 __all__ = [
     "Base",
@@ -27,4 +28,7 @@ __all__ = [
     "SeasonStatus",
     "ScoringRuleset",
     "Team",
+    "Player",
+    "PlayerStatCache",
+    "WeeklyScore",
 ]
