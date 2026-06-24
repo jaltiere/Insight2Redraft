@@ -1,3 +1,6 @@
+from decimal import Decimal
+from typing import Any
+
 import enum
 
 from sqlalchemy import (
@@ -28,7 +31,7 @@ class ScoringRuleset(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     version: Mapped[int] = mapped_column(Integer, default=1)
-    rules: Mapped[dict] = mapped_column(JSON, default=dict)
+    rules: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
 
 class Season(Base, TimestampMixin):
@@ -43,7 +46,7 @@ class Season(Base, TimestampMixin):
         ForeignKey("scoring_ruleset.id", ondelete="SET NULL")
     )
     playoff_field_per_league: Mapped[int] = mapped_column(Integer, default=2)
-    nfl_playoff_weeks: Mapped[list] = mapped_column(JSON, default=list)
+    nfl_playoff_weeks: Mapped[list[int]] = mapped_column(JSON, default=list)
 
     leagues: Mapped[list["League"]] = relationship(
         back_populates="season", cascade="all, delete-orphan"
@@ -83,8 +86,8 @@ class Team(Base):
     wins: Mapped[int] = mapped_column(Integer, default=0)
     losses: Mapped[int] = mapped_column(Integer, default=0)
     ties: Mapped[int] = mapped_column(Integer, default=0)
-    points_for: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
-    points_against: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
+    points_for: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0)
+    points_against: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0)
     league_finish: Mapped[int | None] = mapped_column(Integer)
 
     league: Mapped["League"] = relationship(back_populates="teams")
