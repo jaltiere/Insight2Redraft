@@ -29,3 +29,30 @@ def test_disjoint_keys_contribute_nothing():
 def test_rounding_is_half_up():
     # 4.25 * 0.5 = 2.125 -> quantize to 0.01 half-up -> 2.13
     assert score_stat_line({"x": 4.25}, {"x": 0.5}) == Decimal("2.13")
+
+
+def test_score_players_maps_each_player():
+    from app.scoring.engine import score_players
+
+    player_stats = {"a": {"rec": 5}, "b": {"rush_yd": 100, "rush_td": 1}}
+    result = score_players(player_stats, DEFAULT_PPR)
+    assert result == {"a": Decimal("5.00"), "b": Decimal("16.00")}
+
+
+def test_sum_points_starter_subset():
+    from app.scoring.engine import sum_points
+
+    points = {"a": Decimal("5.00"), "b": Decimal("16.00"), "c": Decimal("9.50")}
+    assert sum_points(["a", "c"], points) == Decimal("14.50")
+
+
+def test_sum_points_missing_player_contributes_zero():
+    from app.scoring.engine import sum_points
+
+    assert sum_points(["a", "z"], {"a": Decimal("5.00")}) == Decimal("5.00")
+
+
+def test_sum_points_empty_is_zero():
+    from app.scoring.engine import sum_points
+
+    assert sum_points([], {}) == Decimal("0")
