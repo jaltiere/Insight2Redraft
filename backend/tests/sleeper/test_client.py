@@ -1,11 +1,20 @@
+import json
+from pathlib import Path
+
 import httpx
 import pytest
 
 from app.sleeper.client import SleeperClient
 from app.sleeper.errors import SleeperError, SleeperNotFound, SleeperUnavailable
-from app.sleeper.models import NflState
+from app.sleeper.models import NflState, SleeperLeague, SleeperMatchup, SleeperRoster, SleeperUser
 
 _STATE_JSON = {"season": "2024", "week": 5, "season_type": "regular", "leg": 5}
+
+_FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _fixture(name: str):
+    return json.loads((_FIXTURES / name).read_text())
 
 
 async def _noop_sleep(_seconds: float) -> None:
@@ -13,6 +22,18 @@ async def _noop_sleep(_seconds: float) -> None:
 
 
 def _client(handler, **kwargs) -> SleeperClient:
+    return SleeperClient(transport=httpx.MockTransport(handler), sleep=_noop_sleep, **kwargs)
+
+
+def _route_client(routes: dict[str, object], **kwargs) -> SleeperClient:
+    """A client whose MockTransport returns a fixture payload by URL-path suffix."""
+
+    def handler(request):
+        for suffix, payload in routes.items():
+            if request.url.path.endswith(suffix):
+                return httpx.Response(200, json=payload)
+        return httpx.Response(404, json={})
+
     return SleeperClient(transport=httpx.MockTransport(handler), sleep=_noop_sleep, **kwargs)
 
 
@@ -98,3 +119,47 @@ async def test_retry_after_header_is_honored():
         state = await c.get_nfl_state()
     assert delays == [0.01]
     assert state.week == 5
+
+
+async def test_get_league_parses_scoring_settings():
+    async with _route_client({"/league/987654321": _fixture("league.json")}) as c:
+        league = await c.get_league("987654321")
+    assert isinstance(league, SleeperLeague)
+    assert league.name == "Alpha League"
+    assert league.scoring_settings["rec"] == 1.0
+    assert "QB" in league.roster_positions
+
+
+async def test_get_league_users_marks_commissioner():
+    async with _route_client({"/league/987654321/users": _fixture("users.json")}) as c:
+        users = await c.get_league_users("987654321")
+    assert [u.user_id for u in users] == ["100", "200", "300"]
+    by_id = {u.user_id: u for u in users}
+    assert by_id["100"].is_commissioner is True
+    assert by_id["200"].is_commissioner is False
+    assert by_id["300"].is_commissioner is False
+
+
+async def test_get_league_rosters_combines_points():
+    async with _route_client({"/league/987654321/rosters": _fixture("rosters.json")}) as c:
+        rosters = await c.get_league_rosters("987654321")
+    assert all(isinstance(r, SleeperRoster) for r in rosters)
+    first = next(r for r in rosters if r.roster_id == 1)
+    assert first.settings.wins == 9
+    assert first.points_for == 1521.40
+
+
+async def test_get_matchups_exposes_lineups():
+    async with _route_client({"/league/987654321/matchups/15": _fixture("matchups.json")}) as c:
+        matchups = await c.get_matchups("987654321", 15)
+    assert all(isinstance(m, SleeperMatchup) for m in matchups)
+    r1 = next(m for m in matchups if m.roster_id == 1)
+    assert r1.starters == ["4046"]
+    assert r1.players_points["4046"] == 24.5
+
+
+async def test_get_weekly_stats_returns_raw_stat_maps():
+    async with _route_client({"/stats/nfl/regular/2024/15": _fixture("weekly_stats.json")}) as c:
+        stats = await c.get_weekly_stats("2024", 15)
+    assert stats["4046"]["pass_yd"] == 305
+    assert stats["6794"]["rec"] == 6

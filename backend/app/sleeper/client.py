@@ -6,7 +6,13 @@ from typing import Any
 import httpx
 
 from app.sleeper.errors import SleeperError, SleeperNotFound, SleeperUnavailable
-from app.sleeper.models import NflState
+from app.sleeper.models import (
+    NflState,
+    SleeperLeague,
+    SleeperMatchup,
+    SleeperRoster,
+    SleeperUser,
+)
 
 DEFAULT_BASE_URL = "https://api.sleeper.app/v1"
 
@@ -94,3 +100,25 @@ class SleeperClient:
     async def get_nfl_state(self) -> NflState:
         data = await self._get_json("/state/nfl")
         return NflState.model_validate(data)
+
+    async def get_league(self, league_id: str) -> SleeperLeague:
+        data = await self._get_json(f"/league/{league_id}")
+        return SleeperLeague.model_validate(data)
+
+    async def get_league_users(self, league_id: str) -> list[SleeperUser]:
+        data = await self._get_json(f"/league/{league_id}/users")
+        return [SleeperUser.model_validate(user) for user in data]
+
+    async def get_league_rosters(self, league_id: str) -> list[SleeperRoster]:
+        data = await self._get_json(f"/league/{league_id}/rosters")
+        return [SleeperRoster.model_validate(roster) for roster in data]
+
+    async def get_matchups(self, league_id: str, week: int) -> list[SleeperMatchup]:
+        data = await self._get_json(f"/league/{league_id}/matchups/{week}")
+        return [SleeperMatchup.model_validate(matchup) for matchup in data]
+
+    async def get_weekly_stats(
+        self, season: str, week: int, season_type: str = "regular"
+    ) -> dict[str, dict[str, float]]:
+        data = await self._get_json(f"/stats/nfl/{season_type}/{season}/{week}")
+        return {pid: stats for pid, stats in data.items() if isinstance(stats, dict)}

@@ -1,0 +1,9 @@
+{
+  "league_id": "987654321",
+  "name": "Alpha League",
+  "season": "2024",
+  "status": "in_season",
+  "previous_league_id": "111111111",
+  "scoring_settings": {"rec": 1.0, "pass_td": 4.0, "rush_yd": 0.1, "rec_yd": 0.1},
+  "roster_positions": ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"]
+}
