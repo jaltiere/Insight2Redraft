@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from app.sleeper.errors import SleeperNotFound, SleeperUnavailable
+from app.sleeper.errors import SleeperError, SleeperNotFound, SleeperUnavailable
 from app.sleeper.models import NflState
 
 DEFAULT_BASE_URL = "https://api.sleeper.app/v1"
@@ -85,8 +85,11 @@ class SleeperClient:
                 attempt += 1
                 continue
 
-            response.raise_for_status()
-            return response.json()
+            if 200 <= response.status_code < 300:
+                return response.json()
+            raise SleeperError(
+                f"GET {path} returned unexpected status {response.status_code}"
+            )
 
     async def get_nfl_state(self) -> NflState:
         data = await self._get_json("/state/nfl")

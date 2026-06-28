@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 from app.sleeper.client import SleeperClient
-from app.sleeper.errors import SleeperNotFound, SleeperUnavailable
+from app.sleeper.errors import SleeperError, SleeperNotFound, SleeperUnavailable
 from app.sleeper.models import NflState
 
 _STATE_JSON = {"season": "2024", "week": 5, "season_type": "regular", "leg": 5}
@@ -65,3 +65,36 @@ async def test_404_raises_not_found_without_retry():
         with pytest.raises(SleeperNotFound):
             await c.get_nfl_state()
     assert calls["n"] == 1
+
+
+async def test_unexpected_4xx_raises_sleeper_error_without_retry():
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        return httpx.Response(400, json={})
+
+    async with _client(handler) as c:
+        with pytest.raises(SleeperError):
+            await c.get_nfl_state()
+    assert calls["n"] == 1
+
+
+async def test_retry_after_header_is_honored():
+    delays = []
+
+    async def recording_sleep(seconds):
+        delays.append(seconds)
+
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(429, headers={"Retry-After": "0.01"}, json={})
+        return httpx.Response(200, json=_STATE_JSON)
+
+    async with SleeperClient(transport=httpx.MockTransport(handler), sleep=recording_sleep) as c:
+        state = await c.get_nfl_state()
+    assert delays == [0.01]
+    assert state.week == 5
