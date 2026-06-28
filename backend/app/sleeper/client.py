@@ -122,7 +122,15 @@ class SleeperClient:
         self, season: str, week: int, season_type: str = "regular"
     ) -> dict[str, dict[str, float]]:
         data = await self._get_json(f"/stats/nfl/{season_type}/{season}/{week}")
-        return {pid: stats for pid, stats in data.items() if isinstance(stats, dict)}
+        return {
+            pid: {
+                stat: float(value)
+                for stat, value in stats.items()
+                if isinstance(value, (int, float)) and not isinstance(value, bool)
+            }
+            for pid, stats in data.items()
+            if isinstance(stats, dict)
+        }
 
     async def get_players(self) -> dict[str, SleeperPlayer]:
         async with self._players_lock:

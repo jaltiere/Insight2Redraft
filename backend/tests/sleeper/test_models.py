@@ -15,6 +15,7 @@ def test_nfl_state_parses_and_ignores_extra():
     assert s.season == "2024"
     assert s.week == 5
     assert s.season_type == "regular"
+    assert s.leg == 5
 
 
 def test_league_keeps_scoring_settings_as_float_map():
@@ -86,3 +87,17 @@ def test_player_parses_core_fields():
     assert p.player_id == "4046"
     assert p.full_name == "Patrick Mahomes"
     assert p.position == "QB"
+
+
+def test_nfl_state_leg_defaults_to_none_when_absent():
+    s = NflState.model_validate({"season": "2024", "week": 1, "season_type": "regular"})
+    assert s.leg is None
+
+
+def test_player_parses_first_and_last_name():
+    p = SleeperPlayer.model_validate(
+        {"player_id": "6794", "first_name": "Amon-Ra", "last_name": "St. Brown", "position": "WR"}
+    )
+    assert p.first_name == "Amon-Ra"
+    assert p.last_name == "St. Brown"
+

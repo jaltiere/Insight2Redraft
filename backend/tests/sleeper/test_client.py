@@ -171,7 +171,10 @@ async def test_get_weekly_stats_returns_raw_stat_maps():
     async with _route_client({"/stats/nfl/regular/2024/15": _fixture("weekly_stats.json")}) as c:
         stats = await c.get_weekly_stats("2024", 15)
     assert stats["4046"]["pass_yd"] == 305
+    assert isinstance(stats["4046"]["pass_yd"], float)
     assert stats["6794"]["rec"] == 6
+    assert "note" not in stats["4046"]   # non-numeric value dropped
+    assert "_meta" not in stats          # non-dict top-level entry dropped
 
 
 _PLAYERS_JSON = {
