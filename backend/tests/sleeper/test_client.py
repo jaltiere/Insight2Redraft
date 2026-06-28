@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 
@@ -6,7 +7,7 @@ import pytest
 
 from app.sleeper.client import SleeperClient
 from app.sleeper.errors import SleeperError, SleeperNotFound, SleeperUnavailable
-from app.sleeper.models import NflState, SleeperLeague, SleeperMatchup, SleeperRoster, SleeperUser
+from app.sleeper.models import NflState, SleeperLeague, SleeperMatchup, SleeperPlayer, SleeperRoster, SleeperUser
 
 _STATE_JSON = {"season": "2024", "week": 5, "season_type": "regular", "leg": 5}
 
@@ -19,6 +20,14 @@ def _fixture(name: str):
 
 async def _noop_sleep(_seconds: float) -> None:
     return None
+
+
+class _FakeClock:
+    def __init__(self, start: float = 1000.0) -> None:
+        self.now = start
+
+    def __call__(self) -> float:
+        return self.now
 
 
 def _client(handler, **kwargs) -> SleeperClient:
@@ -163,3 +172,60 @@ async def test_get_weekly_stats_returns_raw_stat_maps():
         stats = await c.get_weekly_stats("2024", 15)
     assert stats["4046"]["pass_yd"] == 305
     assert stats["6794"]["rec"] == 6
+
+
+_PLAYERS_JSON = {
+    "4046": {"full_name": "Patrick Mahomes", "position": "QB", "team": "KC"},
+    "6794": {"full_name": "Amon-Ra St. Brown", "position": "WR", "team": "DET"},
+}
+
+
+async def test_get_players_parses_and_keys_by_id():
+    def handler(request):
+        return httpx.Response(200, json=_PLAYERS_JSON)
+
+    async with _client(handler) as c:
+        players = await c.get_players()
+    assert isinstance(players["4046"], SleeperPlayer)
+    assert players["4046"].player_id == "4046"
+    assert players["4046"].full_name == "Patrick Mahomes"
+
+
+async def test_get_players_is_cached_single_fetch():
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        return httpx.Response(200, json=_PLAYERS_JSON)
+
+    async with _client(handler) as c:
+        await c.get_players()
+        await c.get_players()
+    assert calls["n"] == 1
+
+
+async def test_get_players_refetches_after_ttl():
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        return httpx.Response(200, json=_PLAYERS_JSON)
+
+    clock = _FakeClock()
+    async with _client(handler, players_cache_ttl=100.0, clock=clock) as c:
+        await c.get_players()
+        clock.now += 101
+        await c.get_players()
+    assert calls["n"] == 2
+
+
+async def test_get_players_concurrent_calls_fetch_once():
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        return httpx.Response(200, json=_PLAYERS_JSON)
+
+    async with _client(handler) as c:
+        await asyncio.gather(c.get_players(), c.get_players())
+    assert calls["n"] == 1

@@ -10,6 +10,7 @@ from app.sleeper.models import (
     NflState,
     SleeperLeague,
     SleeperMatchup,
+    SleeperPlayer,
     SleeperRoster,
     SleeperUser,
 )
@@ -122,3 +123,18 @@ class SleeperClient:
     ) -> dict[str, dict[str, float]]:
         data = await self._get_json(f"/stats/nfl/{season_type}/{season}/{week}")
         return {pid: stats for pid, stats in data.items() if isinstance(stats, dict)}
+
+    async def get_players(self) -> dict[str, SleeperPlayer]:
+        async with self._players_lock:
+            now = self._clock()
+            if self._players_cache is not None:
+                cached_at, cached = self._players_cache
+                if now - cached_at < self._players_cache_ttl:
+                    return cached
+            data = await self._get_json("/players/nfl")
+            players = {
+                pid: SleeperPlayer.model_validate({**pdata, "player_id": pid})
+                for pid, pdata in data.items()
+            }
+            self._players_cache = (now, players)
+            return players
