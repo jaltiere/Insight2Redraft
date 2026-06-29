@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Account, AccountRole, Owner, OwnerSleeperLink
@@ -30,6 +31,20 @@ def test_account_role_enum_persists(db_session):
 
     loaded = db_session.query(Account).filter_by(email="admin@example.com").one()
     assert loaded.role is AccountRole.SUPER_ADMIN
+
+
+def test_account_role_stored_as_lowercase_value(db_session):
+    """The literal string in the column is the enum .value (spec token), not the
+    member NAME. Pins the DB/wire representation decision."""
+    db_session.add(
+        Account(email="repr@example.com", password_hash="x", role=AccountRole.SUPER_ADMIN)
+    )
+    db_session.commit()
+
+    stored = db_session.execute(
+        text("SELECT role::text FROM account WHERE email = 'repr@example.com'")
+    ).scalar_one()
+    assert stored == "super_admin"
 
 
 def test_account_email_unique(db_session):

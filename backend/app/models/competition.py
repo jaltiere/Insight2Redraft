@@ -40,7 +40,12 @@ class Season(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     year: Mapped[int] = mapped_column(Integer, unique=True)
     status: Mapped[SeasonStatus] = mapped_column(
-        Enum(SeasonStatus, name="season_status"), default=SeasonStatus.SETUP
+        Enum(
+            SeasonStatus,
+            name="season_status",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        default=SeasonStatus.SETUP,
     )
     scoring_ruleset_id: Mapped[int | None] = mapped_column(
         ForeignKey("scoring_ruleset.id", ondelete="SET NULL")

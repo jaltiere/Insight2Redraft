@@ -34,7 +34,12 @@ class Bracket(Base):
     )
     size: Mapped[int] = mapped_column(Integer)
     status: Mapped[BracketStatus] = mapped_column(
-        Enum(BracketStatus, name="bracket_status"), default=BracketStatus.PENDING
+        Enum(
+            BracketStatus,
+            name="bracket_status",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        default=BracketStatus.PENDING,
     )
 
 
@@ -50,7 +55,12 @@ class BracketSeed(Base):
     team_id: Mapped[int] = mapped_column(ForeignKey("team.id", ondelete="CASCADE"))
     seed: Mapped[int] = mapped_column(Integer)
     qualified_via: Mapped[QualifiedVia] = mapped_column(
-        Enum(QualifiedVia, name="qualified_via"), default=QualifiedVia.AUTO
+        Enum(
+            QualifiedVia,
+            name="qualified_via",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        default=QualifiedVia.AUTO,
     )
 
 
