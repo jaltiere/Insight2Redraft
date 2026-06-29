@@ -52,7 +52,13 @@ class Account(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
-    role: Mapped[AccountRole] = mapped_column(Enum(AccountRole, name="account_role"))
+    role: Mapped[AccountRole] = mapped_column(
+        Enum(
+            AccountRole,
+            name="account_role",
+            values_callable=lambda e: [m.value for m in e],
+        )
+    )
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("owner.id", ondelete="SET NULL"))
 
 
