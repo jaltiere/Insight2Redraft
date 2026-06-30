@@ -1,0 +1,93 @@
+import pytest
+
+from app.models import League, Season, Team
+from app.sync.errors import SyncError
+from app.sync.service import LeagueSyncResult, SyncService
+from tests.sync.conftest import route_client
+
+# Matches league.json scoring_settings exactly -> validated True.
+MATCHING_RULESET = {"rec": 1.0, "pass_td": 4.0, "rush_yd": 0.1, "rec_yd": 0.1}
+
+
+def _season(db_session) -> Season:
+    season = Season(year=2024)
+    db_session.add(season)
+    db_session.flush()
+    return season
+
+
+async def test_sync_league_setup_upserts_league_and_teams(db_session, league_routes):
+    season = _season(db_session)
+    service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
+
+    result = await service.sync_league_setup("987654321")
+
+    assert isinstance(result, LeagueSyncResult)
+    league = db_session.query(League).filter_by(sleeper_league_id="987654321").one()
+    assert league.name == "Alpha League"
+    assert league.season_id == season.id
+    assert result.commish_sleeper_id == "100"
+
+    teams = db_session.query(Team).filter_by(league_id=league.id).all()
+    assert {t.sleeper_roster_id for t in teams} == {1, 2}
+    roster1 = next(t for t in teams if t.sleeper_roster_id == 1)
+    assert roster1.sleeper_user_id == "100"
+    assert roster1.wins == 9 and roster1.losses == 4
+    assert str(roster1.points_for) == "1521.40"
+
+
+async def test_sync_league_setup_sets_validated_true_on_match(db_session, league_routes):
+    season = _season(db_session)
+    service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
+
+    result = await service.sync_league_setup("987654321")
+
+    assert result.scoring_validated is True
+    assert result.diffs == []
+    league = db_session.query(League).filter_by(sleeper_league_id="987654321").one()
+    assert league.scoring_validated is True
+
+
+async def test_sync_league_setup_flags_validation_diffs(db_session, league_routes):
+    season = _season(db_session)
+    # platform expects pass_td 6.0 but league has 4.0 -> a diff, not validated
+    ruleset = {**MATCHING_RULESET, "pass_td": 6.0}
+    service = SyncService(route_client(league_routes), db_session, season, ruleset)
+
+    result = await service.sync_league_setup("987654321")
+
+    assert result.scoring_validated is False
+    assert ("pass_td", 4.0, 6.0) in result.diffs
+
+
+async def test_sync_league_setup_is_idempotent(db_session, league_routes):
+    season = _season(db_session)
+    service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
+
+    await service.sync_league_setup("987654321")
+    await service.sync_league_setup("987654321")
+
+    assert db_session.query(League).count() == 1
+    assert db_session.query(Team).count() == 2
+
+
+async def test_sync_league_setup_preserves_owner_id(db_session, league_routes):
+    season = _season(db_session)
+    service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
+    await service.sync_league_setup("987654321")
+
+    league = db_session.query(League).filter_by(sleeper_league_id="987654321").one()
+    team = db_session.query(Team).filter_by(league_id=league.id, sleeper_roster_id=1).one()
+    team.owner_id = None  # ensure column exists; then simulate an admin mapping below
+    from app.models import Owner
+
+    owner = Owner(first_name="Jane", last_name="Doe")
+    db_session.add(owner)
+    db_session.flush()
+    team.owner_id = owner.id
+    db_session.flush()
+
+    await service.sync_league_setup("987654321")  # re-sync must not clobber owner_id
+
+    refreshed = db_session.query(Team).filter_by(league_id=league.id, sleeper_roster_id=1).one()
+    assert refreshed.owner_id == owner.id
