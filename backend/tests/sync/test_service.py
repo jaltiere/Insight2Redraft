@@ -1,9 +1,11 @@
+from decimal import Decimal
+
 import pytest
 
-from app.models import League, Season, Team
+from app.models import League, PlayerStatCache, Season, Team, WeeklyScore
 from app.sync.errors import SyncError
-from app.sync.service import LeagueSyncResult, SyncService
-from tests.sync.conftest import route_client
+from app.sync.service import LeagueSyncResult, SyncService, WeekSyncResult
+from tests.sync.conftest import load_fixture, route_client
 
 # Matches league.json scoring_settings exactly -> validated True.
 MATCHING_RULESET = {"rec": 1.0, "pass_td": 4.0, "rush_yd": 0.1, "rec_yd": 0.1}
@@ -91,3 +93,91 @@ async def test_sync_league_setup_preserves_owner_id(db_session, league_routes):
 
     refreshed = db_session.query(Team).filter_by(league_id=league.id, sleeper_roster_id=1).one()
     assert refreshed.owner_id == owner.id
+
+
+# ---------------------------------------------------------------------------
+# sync_week helpers
+# ---------------------------------------------------------------------------
+
+
+def load_fixture_empty():
+    return load_fixture("matchups_empty.json")
+
+
+def _week_routes(league_routes):
+    return {
+        **league_routes,
+        "/league/987654321/matchups/5": load_fixture("matchups.json"),
+        "/stats/nfl/regular/2024/5": load_fixture("weekly_stats.json"),
+    }
+
+
+async def _synced_league(db_session, league_routes):
+    season = _season(db_session)
+    service = SyncService(route_client(_week_routes(league_routes)), db_session, season, MATCHING_RULESET)
+    result = await service.sync_league_setup("987654321")
+    return service, result.league_id
+
+
+# ---------------------------------------------------------------------------
+# sync_week tests
+# ---------------------------------------------------------------------------
+
+
+async def test_sync_week_records_recompute_and_mismatch(db_session, league_routes):
+    service, league_id = await _synced_league(db_session, league_routes)
+
+    result = await service.sync_week(league_id, 5)
+
+    assert isinstance(result, WeekSyncResult)
+    assert result.skipped_roster_ids == []
+
+    team = db_session.query(Team).filter_by(league_id=league_id, sleeper_roster_id=1).one()
+    score = db_session.query(WeeklyScore).filter_by(team_id=team.id, week=5).one()
+    assert score.sleeper_points == Decimal("120.50")
+    assert score.recomputed_points == Decimal("23.40")
+    assert score.bench_points == Decimal("20.80")
+    assert score.mismatch_flag is True
+
+
+async def test_sync_week_caches_player_stats(db_session, league_routes):
+    service, league_id = await _synced_league(db_session, league_routes)
+
+    await service.sync_week(league_id, 5)
+
+    cached = db_session.query(PlayerStatCache).filter_by(
+        sleeper_player_id="4046", season=2024, week=5
+    ).one()
+    assert cached.stats["pass_yd"] == 305
+
+
+async def test_sync_week_is_idempotent(db_session, league_routes):
+    service, league_id = await _synced_league(db_session, league_routes)
+
+    await service.sync_week(league_id, 5)
+    await service.sync_week(league_id, 5)
+
+    assert db_session.query(WeeklyScore).count() == 2  # one per team, not four
+
+
+async def test_sync_week_skips_rosters_without_lineup(db_session, league_routes):
+    season = _season(db_session)
+    routes = {
+        **league_routes,
+        "/league/987654321/matchups/18": load_fixture_empty(),
+        "/stats/nfl/regular/2024/18": {},
+    }
+    service = SyncService(route_client(routes), db_session, season, MATCHING_RULESET)
+    league_id = (await service.sync_league_setup("987654321")).league_id
+
+    result = await service.sync_week(league_id, 18)
+
+    assert result.scored_team_ids == []
+    assert db_session.query(WeeklyScore).count() == 0
+
+
+async def test_sync_week_unknown_league_raises(db_session, league_routes):
+    season = _season(db_session)
+    service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
+    with pytest.raises(SyncError):
+        await service.sync_week(999999, 5)

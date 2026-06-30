@@ -4,9 +4,11 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.models import League, Season, Team
+from app.models import League, PlayerStatCache, Season, Team, WeeklyScore
+from app.scoring.engine import score_players, sum_points
 from app.sleeper.client import SleeperClient
-from app.sleeper.models import SleeperRoster
+from app.sleeper.models import SleeperMatchup, SleeperRoster
+from app.sync.errors import SyncError
 from app.sync.validation import validate_scoring
 
 
@@ -16,6 +18,12 @@ class LeagueSyncResult:
     scoring_validated: bool
     diffs: list[tuple[str, float, float]]
     commish_sleeper_id: str | None
+
+
+@dataclass(frozen=True)
+class WeekSyncResult:
+    scored_team_ids: list[int]
+    skipped_roster_ids: list[int]
 
 
 class SyncService:
@@ -67,6 +75,91 @@ class SyncService:
             diffs=validation.diffs,
             commish_sleeper_id=commish_id,
         )
+
+    async def sync_week(self, league_id: int, week: int) -> WeekSyncResult:
+        league = self._session.get(League, league_id)
+        if league is None:
+            raise SyncError(f"league {league_id} not found")
+
+        matchups = await self._client.get_matchups(league.sleeper_league_id, week)
+        rosters = await self._client.get_league_rosters(league.sleeper_league_id)
+        week_stats = await self._client.get_weekly_stats(str(self._season.year), week)
+
+        # Refresh standings from current rosters (live W/L, points-for).
+        self._upsert_teams(league, rosters)
+        self._session.flush()
+
+        team_by_roster = {
+            t.sleeper_roster_id: t
+            for t in self._session.query(Team).filter_by(league_id=league.id).all()
+        }
+        all_points = score_players(week_stats, self._ruleset)
+
+        # Cache the raw stat lines for every player that appeared in a matchup.
+        involved: set[str] = set()
+        for matchup in matchups:
+            involved.update(matchup.players)
+        self._cache_player_stats(involved, week, week_stats)
+
+        scored: list[int] = []
+        skipped: list[int] = []
+        for matchup in matchups:
+            if not matchup.starters or not matchup.players_points:
+                skipped.append(matchup.roster_id)
+                continue
+            team = team_by_roster.get(matchup.roster_id)
+            if team is None:
+                skipped.append(matchup.roster_id)
+                continue
+            self._upsert_weekly_score(team, week, matchup, all_points)
+            scored.append(team.id)
+
+        self._session.flush()
+        return WeekSyncResult(scored_team_ids=scored, skipped_roster_ids=skipped)
+
+    def _cache_player_stats(
+        self, player_ids: set[str], week: int, week_stats: Mapping[str, Mapping[str, float]]
+    ) -> None:
+        existing = {
+            row.sleeper_player_id: row
+            for row in self._session.query(PlayerStatCache)
+            .filter_by(season=self._season.year, week=week)
+            .all()
+        }
+        for pid in player_ids:
+            row = existing.get(pid)
+            if row is None:
+                row = PlayerStatCache(
+                    sleeper_player_id=pid, season=self._season.year, week=week
+                )
+                self._session.add(row)
+            row.stats = dict(week_stats.get(pid, {}))
+
+    def _upsert_weekly_score(
+        self,
+        team: Team,
+        week: int,
+        matchup: SleeperMatchup,
+        all_points: Mapping[str, Decimal],
+    ) -> None:
+        starters = matchup.starters
+        bench = [p for p in matchup.players if p not in set(starters)]
+        recomputed = sum_points(starters, all_points)
+        bench_points = sum_points(bench, all_points)
+        sleeper_points = Decimal(str(matchup.points))
+
+        score = (
+            self._session.query(WeeklyScore)
+            .filter_by(team_id=team.id, week=week)
+            .one_or_none()
+        )
+        if score is None:
+            score = WeeklyScore(team_id=team.id, week=week)
+            self._session.add(score)
+        score.sleeper_points = sleeper_points
+        score.recomputed_points = recomputed
+        score.bench_points = bench_points
+        score.mismatch_flag = abs(sleeper_points - recomputed) > Decimal("0.01")
 
     def _upsert_teams(self, league: League, rosters: list[SleeperRoster]) -> list[Team]:
         existing = {
