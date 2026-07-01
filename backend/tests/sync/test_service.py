@@ -176,6 +176,31 @@ async def test_sync_week_skips_rosters_without_lineup(db_session, league_routes)
     assert db_session.query(WeeklyScore).count() == 0
 
 
+async def test_sync_week_skips_populated_roster_with_empty_lineup(db_session, league_routes):
+    season = _season(db_session)
+    routes = {
+        **league_routes,
+        "/league/987654321/matchups/6": load_fixture("matchups_skip.json"),
+        "/stats/nfl/regular/2024/6": load_fixture("weekly_stats.json"),
+    }
+    service = SyncService(route_client(routes), db_session, season, MATCHING_RULESET)
+    league_id = (await service.sync_league_setup("987654321")).league_id
+
+    result = await service.sync_week(league_id, 6)
+
+    # Roster 2 (empty starters/players_points) must be skipped.
+    assert 2 in result.skipped_roster_ids
+
+    team1 = db_session.query(Team).filter_by(league_id=league_id, sleeper_roster_id=1).one()
+    team2 = db_session.query(Team).filter_by(league_id=league_id, sleeper_roster_id=2).one()
+
+    assert team2.id not in result.scored_team_ids
+    assert db_session.query(WeeklyScore).filter_by(team_id=team2.id, week=6).count() == 0
+
+    # Roster 1 (valid lineup) must be scored.
+    assert team1.id in result.scored_team_ids
+
+
 async def test_sync_week_unknown_league_raises(db_session, league_routes):
     season = _season(db_session)
     service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
