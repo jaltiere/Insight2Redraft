@@ -99,7 +99,12 @@ def _players_due(players_state: PlayersSyncState, now: datetime) -> bool:
 
 
 async def _maybe_sync_players(
-    client, session_factory, clock, players_state, season_id, ruleset
+    client: SleeperClient,
+    session_factory: sessionmaker,
+    clock: Callable[[], datetime],
+    players_state: PlayersSyncState,
+    season_id: int,
+    ruleset: dict,
 ) -> bool:
     now = clock()
     if not _players_due(players_state, now):

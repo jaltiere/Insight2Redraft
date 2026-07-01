@@ -54,6 +54,29 @@ async def test_run_cycle_idle_when_no_active_season(session_factory):
 
     assert result.season_active is False
     assert result.leagues_synced == 0
+    assert result.players_synced is False
+    with session_factory() as session:
+        assert session.query(WeeklyScore).count() == 0
+
+
+async def test_run_cycle_idle_when_no_season_in_db(session_factory):
+    # No season seeded at all -> the year lookup returns None -> idle.
+    client = route_client(_base_routes())
+
+    result = await run_cycle(client, session_factory, fixed_clock(UTC_NOW), PlayersSyncState())
+
+    assert result.season_active is False
+    assert result.leagues_synced == 0
+    assert result.players_synced is False
+
+
+async def test_run_cycle_idle_when_season_complete(session_factory):
+    _seed_season(session_factory, status=SeasonStatus.COMPLETE)
+    client = route_client(_base_routes())
+
+    result = await run_cycle(client, session_factory, fixed_clock(UTC_NOW), PlayersSyncState())
+
+    assert result.season_active is False
     with session_factory() as session:
         assert session.query(WeeklyScore).count() == 0
 
@@ -86,7 +109,10 @@ async def test_run_cycle_syncs_players_when_due(session_factory):
         assert session.query(Player).count() == 2
 
 
-async def test_run_cycle_skips_players_when_recent(session_factory):
+async def test_run_cycle_skips_players_when_recent(session_factory, monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "worker_players_sync_hours", 24.0)
     _seed_season(session_factory)
     client = route_client(_base_routes())
     state = PlayersSyncState(last_synced_at=UTC_NOW - timedelta(hours=1))
