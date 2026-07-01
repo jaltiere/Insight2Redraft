@@ -6,6 +6,10 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/insight2redraft"
     test_database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/insight2redraft_test"
+    worker_interval_active: float = 180.0
+    worker_interval_in_season: float = 1800.0
+    worker_interval_idle: float = 21600.0
+    worker_players_sync_hours: float = 24.0
 
 
 settings = Settings()
