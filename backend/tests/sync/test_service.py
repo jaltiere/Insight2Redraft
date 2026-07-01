@@ -60,6 +60,8 @@ async def test_sync_league_setup_flags_validation_diffs(db_session, league_route
 
     assert result.scoring_validated is False
     assert ("pass_td", 4.0, 6.0) in result.diffs
+    league = db_session.query(League).filter_by(sleeper_league_id="987654321").one()
+    assert league.scoring_validated is False
 
 
 async def test_sync_league_setup_is_idempotent(db_session, league_routes):
@@ -240,3 +242,22 @@ async def test_sync_players_is_idempotent(db_session, league_routes):
     await service.sync_players()
 
     assert db_session.query(Player).count() == 2
+
+
+async def test_sync_players_overwrites_changed_fields(db_session, league_routes):
+    season = _season(db_session)
+    routes = {"/players/nfl": load_players_fixture()}
+    service = SyncService(route_client(routes), db_session, season, MATCHING_RULESET)
+    await service.sync_players()
+
+    # Simulate a stale row, then re-sync: the Sleeper values must win.
+    player = db_session.query(Player).filter_by(sleeper_player_id="4046").one()
+    player.full_name = "Stale Name"
+    player.nfl_team = "XXX"
+    db_session.flush()
+
+    await service.sync_players()
+
+    refreshed = db_session.query(Player).filter_by(sleeper_player_id="4046").one()
+    assert refreshed.full_name == "Patrick Mahomes"
+    assert refreshed.nfl_team == "KC"

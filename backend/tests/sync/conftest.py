@@ -12,6 +12,11 @@ _SYNC_FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def load_fixture(name: str):
+    # Sync-local fixtures win over the shared sleeper ones. Most names resolve to
+    # tests/sleeper/fixtures (DRY), but tests/sync/fixtures/weekly_stats.json
+    # deliberately shadows the sleeper copy: sync tests inject a 4-key
+    # MATCHING_RULESET (not DEFAULT_PPR), so the stat lines are tuned to yield the
+    # recompute values those tests assert. Keep the two files separate.
     for base in (_SYNC_FIXTURES, _SLEEPER_FIXTURES):
         path = base / name
         if path.exists():

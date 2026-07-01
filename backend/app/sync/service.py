@@ -157,7 +157,8 @@ class SyncService:
         all_points: Mapping[str, Decimal],
     ) -> None:
         starters = matchup.starters
-        bench = [p for p in matchup.players if p not in set(starters)]
+        starter_set = set(starters)
+        bench = [p for p in matchup.players if p not in starter_set]
         recomputed = sum_points(starters, all_points)
         bench_points = sum_points(bench, all_points)
         sleeper_points = Decimal(str(matchup.points))
