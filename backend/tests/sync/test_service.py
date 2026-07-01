@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.models import League, PlayerStatCache, Season, Team, WeeklyScore
+from app.models import League, Player, PlayerStatCache, Season, Team, WeeklyScore
 from app.sync.errors import SyncError
 from app.sync.service import LeagueSyncResult, SyncService, WeekSyncResult
 from tests.sync.conftest import load_fixture, route_client
@@ -102,6 +102,10 @@ async def test_sync_league_setup_preserves_owner_id(db_session, league_routes):
 
 def load_fixture_empty():
     return load_fixture("matchups_empty.json")
+
+
+def load_players_fixture():
+    return load_fixture("players.json")
 
 
 def _week_routes(league_routes):
@@ -206,3 +210,33 @@ async def test_sync_week_unknown_league_raises(db_session, league_routes):
     service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
     with pytest.raises(SyncError):
         await service.sync_week(999999, 5)
+
+
+# ---------------------------------------------------------------------------
+# sync_players tests
+# ---------------------------------------------------------------------------
+
+
+async def test_sync_players_upserts(db_session, league_routes):
+    season = _season(db_session)
+    routes = {"/players/nfl": load_players_fixture()}
+    service = SyncService(route_client(routes), db_session, season, MATCHING_RULESET)
+
+    count = await service.sync_players()
+
+    assert count == 2
+    player = db_session.query(Player).filter_by(sleeper_player_id="4046").one()
+    assert player.full_name == "Patrick Mahomes"
+    assert player.position == "QB"
+    assert player.nfl_team == "KC"
+
+
+async def test_sync_players_is_idempotent(db_session, league_routes):
+    season = _season(db_session)
+    routes = {"/players/nfl": load_players_fixture()}
+    service = SyncService(route_client(routes), db_session, season, MATCHING_RULESET)
+
+    await service.sync_players()
+    await service.sync_players()
+
+    assert db_session.query(Player).count() == 2

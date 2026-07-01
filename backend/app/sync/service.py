@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.models import League, PlayerStatCache, Season, Team, WeeklyScore
+from app.models import League, Player, PlayerStatCache, Season, Team, WeeklyScore
 from app.scoring.engine import score_players, sum_points
 from app.sleeper.client import SleeperClient
 from app.sleeper.models import SleeperMatchup, SleeperRoster
@@ -116,6 +116,20 @@ class SyncService:
 
         self._session.flush()
         return WeekSyncResult(scored_team_ids=scored, skipped_roster_ids=skipped)
+
+    async def sync_players(self) -> int:
+        players = await self._client.get_players()
+        existing = {p.sleeper_player_id: p for p in self._session.query(Player).all()}
+        for pid, data in players.items():
+            row = existing.get(pid)
+            if row is None:
+                row = Player(sleeper_player_id=pid)
+                self._session.add(row)
+            row.full_name = data.full_name
+            row.position = data.position
+            row.nfl_team = data.team
+        self._session.flush()
+        return len(players)
 
     def _cache_player_stats(
         self, player_ids: set[str], week: int, week_stats: Mapping[str, Mapping[str, float]]
