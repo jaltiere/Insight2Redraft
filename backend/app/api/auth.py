@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.schemas import LoginRequest, TokenResponse
+from app.api.deps import get_current_account
+from app.api.schemas import AccountResponse, LoginRequest, TokenResponse
 from app.api.security import create_access_token, hash_password, verify_password
 from app.db import get_db
 from app.models import Account
@@ -27,3 +28,8 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
             headers={"WWW-Authenticate": "Bearer"},
         )
     return TokenResponse(access_token=create_access_token(account.id, account.role))
+
+
+@router.get("/me", response_model=AccountResponse)
+def me(account: Account = Depends(get_current_account)) -> Account:
+    return account
