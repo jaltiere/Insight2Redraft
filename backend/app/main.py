@@ -1,9 +1,23 @@
+import os
+
 from fastapi import FastAPI
 
 from app.api.auth import router as auth_router
+from app.config import settings
+
+
+_INSECURE_JWT_SECRET_DEFAULT = "dev-insecure-change-me"
 
 
 def create_app() -> FastAPI:
+    # Fail loudly if jwt_secret is still the dev default in production
+    if os.environ.get("ENVIRONMENT") == "production":
+        if settings.jwt_secret == _INSECURE_JWT_SECRET_DEFAULT:
+            raise RuntimeError(
+                "JWT_SECRET environment variable must be set to a secure value in production. "
+                "The current jwt_secret is the insecure dev default. "
+                "Please set the JWT_SECRET environment variable before starting the app."
+            )
     app = FastAPI(title="Insight2Redraft API")
     app.include_router(auth_router)
 
