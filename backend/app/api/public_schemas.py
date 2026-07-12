@@ -79,3 +79,36 @@ class TeamDetail(BaseModel):
     points_against: float
     league_finish: int | None
     weekly_scores: list[WeeklyScoreEntry]
+
+
+class OwnerSeasonRecord(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    season_year: int
+    league_id: int
+    league_name: str
+    wins: int
+    losses: int
+    ties: int
+    points_for: float
+    points_against: float
+    league_finish: int | None
+
+
+class BestWeeklyEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    season_year: int
+    league_name: str
+    week: int
+    points: float
+
+
+class OwnerProfile(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    display_name: str | None
+    avatar_url: str | None
+    season_records: list[OwnerSeasonRecord]
+    best_weekly: list[BestWeeklyEntry]

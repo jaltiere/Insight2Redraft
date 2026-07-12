@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.api.auth import router as auth_router
 from app.api.leagues import router as leagues_router
+from app.api.owners import router as owners_router
 from app.api.seasons import router as seasons_router
 from app.config import settings
 
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(seasons_router)
     app.include_router(leagues_router)
+    app.include_router(owners_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:
