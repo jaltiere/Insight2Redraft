@@ -27,3 +27,27 @@ class SeasonAdminResponse(BaseModel):
     scoring_ruleset_id: int | None
     playoff_field_per_league: int
     nfl_playoff_weeks: list[int]
+
+
+class LeagueEntryRequest(BaseModel):
+    sleeper_league_id: str
+
+
+class ScoringDiff(BaseModel):
+    category: str
+    league_value: float
+    platform_value: float
+
+
+class TeamRef(BaseModel):
+    team_id: int
+    sleeper_roster_id: int
+    sleeper_user_id: str | None
+
+
+class LeagueSetupResponse(BaseModel):
+    league_id: int
+    name: str
+    scoring_validated: bool
+    diffs: list[ScoringDiff]
+    teams: list[TeamRef]

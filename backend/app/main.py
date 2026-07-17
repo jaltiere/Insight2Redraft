@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 
+from app.api.admin.leagues import router as admin_leagues_router
 from app.api.admin.seasons import router as admin_seasons_router
 from app.api.auth import router as auth_router
 from app.api.leagues import router as leagues_router
@@ -28,6 +29,7 @@ def create_app() -> FastAPI:
     app.include_router(leagues_router)
     app.include_router(owners_router)
     app.include_router(admin_seasons_router)
+    app.include_router(admin_leagues_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:
