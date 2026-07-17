@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, Callable
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.api.security import InvalidToken, decode_access_token
 from app.db import get_db
 from app.models import Account, AccountRole, LeagueAdminGrant
+from app.sleeper.client import SleeperClient
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -65,3 +66,12 @@ def require_league_admin(league_id: int) -> Callable[..., Account]:
         return account
 
     return dependency
+
+
+async def get_sleeper_client() -> AsyncGenerator[SleeperClient, None]:
+    # Tighter timeout/retries bounds worst-case latency for interactive admin path
+    client = SleeperClient(timeout=10.0, max_retries=1)
+    try:
+        yield client
+    finally:
+        await client.aclose()
