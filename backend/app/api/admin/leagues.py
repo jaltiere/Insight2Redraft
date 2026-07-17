@@ -90,6 +90,8 @@ async def resync_league(
     if league is None:
         raise HTTPException(status_code=404, detail="League not found")
     season = db.get(Season, league.season_id)
+    if season is None:
+        raise HTTPException(status_code=404, detail="Season not found")
     return await _run_setup(db, client, season, league.sleeper_league_id)
 
 

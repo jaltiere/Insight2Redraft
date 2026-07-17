@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.admin.schemas import SeasonAdminResponse, SeasonCreate, SeasonUpdate
@@ -29,7 +30,11 @@ def create_season(body: SeasonCreate, db: Session = Depends(get_db)) -> Season:
         status=body.status,
     )
     db.add(season)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Season year already exists")
     db.refresh(season)
     return season
 
