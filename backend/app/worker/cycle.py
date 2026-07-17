@@ -6,10 +6,10 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
-from app.models import League, ScoringRuleset, Season, SeasonStatus, Team, WeeklyScore
-from app.scoring.rulesets import DEFAULT_PPR
+from app.models import League, Season, SeasonStatus, Team, WeeklyScore
 from app.sleeper.client import SleeperClient
 from app.sleeper.models import NflState
+from app.sync.ruleset import resolve_ruleset
 from app.sync.service import SyncService
 
 logger = logging.getLogger(__name__)
@@ -51,12 +51,7 @@ async def run_cycle(
         league_ids = [
             row.id for row in session.query(League).filter_by(season_id=season.id).all()
         ]
-        ruleset_row = (
-            session.get(ScoringRuleset, season.scoring_ruleset_id)
-            if season.scoring_ruleset_id
-            else None
-        )
-        ruleset = ruleset_row.rules if ruleset_row else DEFAULT_PPR
+        ruleset = resolve_ruleset(session, season)
 
     synced = 0
     failed = 0
