@@ -55,25 +55,50 @@ def test_require_super_admin_route_enforcement(app, make_account):
     assert forbidden.status_code == 403
 
 
-# require_league_admin — direct calls on the factory's dependency
+# require_league_admin — direct calls (reshaped to path-param dependency)
 
 def test_league_admin_with_grant_passes(db_session, make_account, league):
     admin = make_account("la@example.com", "pw", role=AccountRole.LEAGUE_ADMIN)
     db_session.add(LeagueAdminGrant(account_id=admin.id, league_id=league.id))
     db_session.flush()
-    dep = require_league_admin(league.id)
-    assert dep(account=admin, db=db_session) is admin
+    assert require_league_admin(league_id=league.id, account=admin, db=db_session) is admin
 
 
 def test_league_admin_without_grant_rejected_403(db_session, make_account, league):
     admin = make_account("la@example.com", "pw", role=AccountRole.LEAGUE_ADMIN)
-    dep = require_league_admin(league.id)
     with pytest.raises(HTTPException) as exc:
-        dep(account=admin, db=db_session)
+        require_league_admin(league_id=league.id, account=admin, db=db_session)
     assert exc.value.status_code == 403
 
 
 def test_super_admin_passes_any_league_without_grant(db_session, make_account, league):
     root = make_account("root@example.com", "pw", role=AccountRole.SUPER_ADMIN)
-    dep = require_league_admin(league.id)
-    assert dep(account=root, db=db_session) is root
+    assert require_league_admin(league_id=league.id, account=root, db=db_session) is root
+
+
+# require_league_admin — wired through a real {league_id} route end-to-end
+
+def test_require_league_admin_route_enforcement(app, db_session, make_account, league):
+    @app.get("/_test/leagues/{league_id}/guarded")
+    def guarded(
+        league_id: int, account: Account = Depends(require_league_admin)
+    ) -> dict[str, int]:
+        return {"id": account.id}
+
+    client = TestClient(app)
+    root = make_account("root@example.com", "pw", role=AccountRole.SUPER_ADMIN)
+    granted = make_account("la@example.com", "pw", role=AccountRole.LEAGUE_ADMIN)
+    db_session.add(LeagueAdminGrant(account_id=granted.id, league_id=league.id))
+    ungranted = make_account("other@example.com", "pw", role=AccountRole.LEAGUE_ADMIN)
+    db_session.flush()
+
+    assert client.get(
+        f"/_test/leagues/{league.id}/guarded", headers=_auth_header(root)
+    ).status_code == 200
+    assert client.get(
+        f"/_test/leagues/{league.id}/guarded", headers=_auth_header(granted)
+    ).status_code == 200
+    assert client.get(
+        f"/_test/leagues/{league.id}/guarded", headers=_auth_header(ungranted)
+    ).status_code == 403
+    assert client.get(f"/_test/leagues/{league.id}/guarded").status_code == 401

@@ -93,3 +93,24 @@ class OwnerAdminResponse(BaseModel):
 
 class OwnerAdminDetail(OwnerAdminResponse):
     sleeper_links: list[OwnerSleeperLinkRef]
+
+
+class OwnerRef(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    first_name: str
+    last_name: str
+    display_name: str | None
+
+
+class TeamOwnerAssign(BaseModel):
+    owner_id: int
+
+
+class TeamMappingRow(BaseModel):
+    team_id: int
+    sleeper_roster_id: int
+    sleeper_user_id: str | None
+    sleeper_display_name: str | None
+    owner: OwnerRef | None

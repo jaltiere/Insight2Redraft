@@ -1,6 +1,6 @@
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Path
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -48,24 +48,22 @@ def require_super_admin(account: Account = Depends(get_current_account)) -> Acco
     return account
 
 
-def require_league_admin(league_id: int) -> Callable[..., Account]:
-    def dependency(
-        account: Account = Depends(get_current_account),
-        db: Session = Depends(get_db),
-    ) -> Account:
-        if account.role is AccountRole.SUPER_ADMIN:
-            return account
-        grant = db.execute(
-            select(LeagueAdminGrant).where(
-                LeagueAdminGrant.account_id == account.id,
-                LeagueAdminGrant.league_id == league_id,
-            )
-        ).scalar_one_or_none()
-        if grant is None:
-            raise _forbidden()
+def require_league_admin(
+    league_id: int = Path(...),
+    account: Account = Depends(get_current_account),
+    db: Session = Depends(get_db),
+) -> Account:
+    if account.role is AccountRole.SUPER_ADMIN:
         return account
-
-    return dependency
+    grant = db.execute(
+        select(LeagueAdminGrant).where(
+            LeagueAdminGrant.account_id == account.id,
+            LeagueAdminGrant.league_id == league_id,
+        )
+    ).scalar_one_or_none()
+    if grant is None:
+        raise _forbidden()
+    return account
 
 
 async def get_sleeper_client() -> AsyncGenerator[SleeperClient, None]:
