@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.admin.schemas import (
@@ -29,7 +30,11 @@ def create_owner(
             raise HTTPException(status_code=409, detail="Owner email already exists")
     owner = Owner(**body.model_dump())
     db.add(owner)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Owner email already exists")
     db.refresh(owner)
     return owner
 
@@ -88,6 +93,10 @@ def update_owner(
             raise HTTPException(status_code=409, detail="Owner email already exists")
     for field, value in data.items():
         setattr(owner, field, value)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Owner email already exists")
     db.refresh(owner)
     return owner
