@@ -95,3 +95,8 @@ def test_patch_unknown_owner_404(client, admin_headers):
         "/admin/owners/999999", json={"first_name": "X"}, headers=admin_headers
     )
     assert resp.status_code == 404
+
+
+def test_list_owners_rejects_negative_limit(client, admin_headers):
+    resp = client.get("/admin/owners", params={"limit": -1}, headers=admin_headers)
+    assert resp.status_code == 422

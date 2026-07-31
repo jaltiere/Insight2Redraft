@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -42,7 +42,7 @@ def create_owner(
 @router.get("/owners", response_model=list[OwnerAdminResponse])
 def list_owners(
     q: str | None = None,
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     _account=Depends(get_current_account),
 ) -> list[Owner]:
