@@ -38,6 +38,25 @@ async def test_sync_league_setup_upserts_league_and_teams(db_session, league_rou
     assert str(roster1.points_for) == "1521.40"
 
 
+async def test_sync_league_setup_sets_display_name(db_session, league_routes):
+    season = _season(db_session)
+    service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)
+
+    await service.sync_league_setup("987654321")
+
+    team = db_session.query(Team).filter_by(sleeper_roster_id=1).one()
+    assert team.sleeper_display_name == "commish"
+
+
+async def test_sync_week_preserves_display_name(db_session, league_routes):
+    service, league_id = await _synced_league(db_session, league_routes)
+
+    await service.sync_week(league_id, 5)  # sync_week does not fetch users
+
+    team = db_session.query(Team).filter_by(sleeper_roster_id=1).one()
+    assert team.sleeper_display_name == "commish"
+
+
 async def test_sync_league_setup_sets_validated_true_on_match(db_session, league_routes):
     season = _season(db_session)
     service = SyncService(route_client(league_routes), db_session, season, MATCHING_RULESET)

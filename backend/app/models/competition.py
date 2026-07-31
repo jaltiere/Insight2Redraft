@@ -88,6 +88,7 @@ class Team(Base):
     sleeper_roster_id: Mapped[int] = mapped_column(Integer)
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("owner.id", ondelete="SET NULL"))
     sleeper_user_id: Mapped[str | None] = mapped_column(String(50))
+    sleeper_display_name: Mapped[str | None] = mapped_column(String(100))
     wins: Mapped[int] = mapped_column(Integer, default=0)
     losses: Mapped[int] = mapped_column(Integer, default=0)
     ties: Mapped[int] = mapped_column(Integer, default=0)

@@ -51,3 +51,66 @@ class LeagueSetupResponse(BaseModel):
     scoring_validated: bool
     diffs: list[ScoringDiff]
     teams: list[TeamRef]
+
+
+class OwnerCreate(BaseModel):
+    first_name: str
+    last_name: str
+    email: str | None = None
+    display_name: str | None = None
+    avatar_url: str | None = None
+    notes: str | None = None
+
+
+class OwnerUpdate(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str | None = None
+    display_name: str | None = None
+    avatar_url: str | None = None
+    notes: str | None = None
+
+
+class OwnerSleeperLinkRef(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    sleeper_user_id: str
+    season: int
+    sleeper_display_name: str | None
+
+
+class OwnerAdminResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    first_name: str
+    last_name: str
+    email: str | None
+    display_name: str | None
+    avatar_url: str | None
+    notes: str | None
+
+
+class OwnerAdminDetail(OwnerAdminResponse):
+    sleeper_links: list[OwnerSleeperLinkRef]
+
+
+class OwnerRef(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    first_name: str
+    last_name: str
+    display_name: str | None
+
+
+class TeamOwnerAssign(BaseModel):
+    owner_id: int
+
+
+class TeamMappingRow(BaseModel):
+    team_id: int
+    sleeper_roster_id: int
+    sleeper_user_id: str | None
+    sleeper_display_name: str | None
+    owner: OwnerRef | None

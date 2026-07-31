@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import League, Player, PlayerStatCache, Season, Team, WeeklyScore
 from app.scoring.engine import score_players, sum_points
 from app.sleeper.client import SleeperClient
-from app.sleeper.models import SleeperMatchup, SleeperRoster
+from app.sleeper.models import SleeperMatchup, SleeperRoster, SleeperUser
 from app.sync.errors import SyncError
 from app.sync.validation import validate_scoring
 
@@ -66,7 +66,7 @@ class SyncService:
         league.scoring_validated = validation.validated
 
         self._session.flush()
-        self._upsert_teams(league, rosters)
+        self._upsert_teams(league, rosters, users)
         self._session.flush()
 
         return LeagueSyncResult(
@@ -176,7 +176,15 @@ class SyncService:
         score.bench_points = bench_points
         score.mismatch_flag = abs(sleeper_points - recomputed) > Decimal("0.01")
 
-    def _upsert_teams(self, league: League, rosters: list[SleeperRoster]) -> list[Team]:
+    def _upsert_teams(
+        self,
+        league: League,
+        rosters: list[SleeperRoster],
+        users: list[SleeperUser] | None = None,
+    ) -> list[Team]:
+        display_by_user = (
+            {u.user_id: u.display_name for u in users} if users is not None else None
+        )
         existing = {
             t.sleeper_roster_id: t
             for t in self._session.query(Team).filter_by(league_id=league.id).all()
@@ -189,6 +197,8 @@ class SyncService:
                 self._session.add(team)
             # Sleeper-derived fields refresh on every sync; owner_id is preserved.
             team.sleeper_user_id = roster.owner_id
+            if display_by_user is not None:
+                team.sleeper_display_name = display_by_user.get(roster.owner_id)
             team.wins = roster.settings.wins
             team.losses = roster.settings.losses
             team.ties = roster.settings.ties
