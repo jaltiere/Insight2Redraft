@@ -114,3 +114,11 @@ class TeamMappingRow(BaseModel):
     sleeper_user_id: str | None
     sleeper_display_name: str | None
     owner: OwnerRef | None
+
+
+class SyncNowResponse(BaseModel):
+    league_id: int
+    week: int
+    teams_synced: int
+    rosters_skipped: int
+    mismatches: int
