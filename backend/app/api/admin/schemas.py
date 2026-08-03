@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import SeasonStatus
+from app.models import AccountRole, SeasonStatus
 
 
 class SeasonCreate(BaseModel):
@@ -114,3 +114,38 @@ class TeamMappingRow(BaseModel):
     sleeper_user_id: str | None
     sleeper_display_name: str | None
     owner: OwnerRef | None
+
+
+class SyncNowResponse(BaseModel):
+    league_id: int
+    week: int
+    teams_synced: int
+    rosters_skipped: int
+    mismatches: int
+
+
+class AccountCreate(BaseModel):
+    email: str
+    password: str
+    owner_id: int | None = None
+
+
+class AccountPasswordReset(BaseModel):
+    password: str
+
+
+class LeagueGrantRef(BaseModel):
+    league_id: int
+    league_name: str
+
+
+class AccountAdminResponse(BaseModel):
+    id: int
+    email: str
+    role: AccountRole
+    owner_id: int | None
+    grants: list[LeagueGrantRef]
+
+
+class GrantCreate(BaseModel):
+    league_id: int

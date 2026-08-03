@@ -59,9 +59,9 @@ def seed(db_session):
             return se
 
         def league(self, season, name="League", scoring_validated=False, **kw) -> League:
+            kw.setdefault("sleeper_league_id", str(self._next()))
             lg = League(
                 season_id=season.id,
-                sleeper_league_id=str(self._next()),
                 name=name,
                 scoring_validated=scoring_validated,
                 **kw,
