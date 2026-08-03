@@ -87,6 +87,14 @@ def test_sync_now_sleeper_failure_502(app, client, admin_headers, db_session, se
     assert resp.status_code == 502
 
 
+def test_sync_now_sleeper_not_found_422(app, client, admin_headers, db_session, seed):
+    _season, league = _regular_league(seed, db_session)
+    # Only nfl_state is routed; matchups/rosters/stats 404 -> SleeperNotFound -> 422
+    _use_client(app, route_client({"/state/nfl": NFL_STATE}))
+    resp = client.post(f"/admin/leagues/{league.id}/sync", headers=admin_headers)
+    assert resp.status_code == 422
+
+
 def test_sync_now_league_admin_scope(app, client, db_session, seed, make_account):
     _season, league = _regular_league(seed, db_session)
     other_season = seed.season(2099, status=SeasonStatus.REGULAR)
