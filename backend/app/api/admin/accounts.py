@@ -7,6 +7,7 @@ from app.api.admin.schemas import (
     AccountAdminResponse,
     AccountCreate,
     AccountPasswordReset,
+    GrantCreate,
     LeagueGrantRef,
 )
 from app.api.deps import require_super_admin
@@ -103,4 +104,47 @@ def delete_account(account_id: int, db: Session = Depends(get_db)) -> None:
                 status_code=409, detail="Cannot delete the last super admin"
             )
     db.delete(account)
+    db.commit()
+
+
+@router.post(
+    "/accounts/{account_id}/grants",
+    response_model=LeagueGrantRef,
+    status_code=201,
+)
+def grant_league(
+    account_id: int, body: GrantCreate, db: Session = Depends(get_db)
+) -> LeagueGrantRef:
+    account = db.get(Account, account_id)
+    if account is None:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if account.role is not AccountRole.LEAGUE_ADMIN:
+        raise HTTPException(
+            status_code=422, detail="Grants apply only to league admins"
+        )
+    league = db.get(League, body.league_id)
+    if league is None:
+        raise HTTPException(status_code=404, detail="League not found")
+    db.add(LeagueAdminGrant(account_id=account_id, league_id=body.league_id))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Grant already exists")
+    return LeagueGrantRef(league_id=league.id, league_name=league.name)
+
+
+@router.delete("/accounts/{account_id}/grants/{league_id}", status_code=204)
+def revoke_league(
+    account_id: int, league_id: int, db: Session = Depends(get_db)
+) -> None:
+    grant = db.execute(
+        select(LeagueAdminGrant).where(
+            LeagueAdminGrant.account_id == account_id,
+            LeagueAdminGrant.league_id == league_id,
+        )
+    ).scalar_one_or_none()
+    if grant is None:
+        raise HTTPException(status_code=404, detail="Grant not found")
+    db.delete(grant)
     db.commit()

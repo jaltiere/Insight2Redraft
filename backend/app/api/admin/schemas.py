@@ -145,3 +145,7 @@ class AccountAdminResponse(BaseModel):
     role: AccountRole
     owner_id: int | None
     grants: list[LeagueGrantRef]
+
+
+class GrantCreate(BaseModel):
+    league_id: int
