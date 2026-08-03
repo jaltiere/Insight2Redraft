@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import SeasonStatus
+from app.models import AccountRole, SeasonStatus
 
 
 class SeasonCreate(BaseModel):
@@ -122,3 +122,26 @@ class SyncNowResponse(BaseModel):
     teams_synced: int
     rosters_skipped: int
     mismatches: int
+
+
+class AccountCreate(BaseModel):
+    email: str
+    password: str
+    owner_id: int | None = None
+
+
+class AccountPasswordReset(BaseModel):
+    password: str
+
+
+class LeagueGrantRef(BaseModel):
+    league_id: int
+    league_name: str
+
+
+class AccountAdminResponse(BaseModel):
+    id: int
+    email: str
+    role: AccountRole
+    owner_id: int | None
+    grants: list[LeagueGrantRef]
