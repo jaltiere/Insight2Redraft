@@ -103,6 +103,14 @@ def test_seed_field_league_with_fewer_than_n_contributes_all():
     assert [s.seed for s in result] == [1, 2, 3]  # contiguous 1..K
 
 
+def test_seed_field_zero_games_sorts_last():
+    standings = [
+        _st(1, 10, 0, 0, pf="0"),    # no games played -> win% 0 -> last
+        _st(2, 10, 1, 0, pf="0"),    # 1-0 -> win% 1.0 -> first
+    ]
+    assert _seeds(seed_field(standings, field_per_league=2)) == [(2, 1), (1, 2)]
+
+
 def _rt(team_id, seed):
     return RemainingTeam(team_id=team_id, seed=seed)
 
@@ -163,7 +171,7 @@ def test_generate_round_field_reduces_to_power_of_two():
         plan = generate_round(_teams(*range(1, n + 1)))
         field = len(plan.games) + len(plan.byes)
         assert field & (field - 1) == 0  # next field is a power of two
-        assert field <= n and field * 2 >= n  # it's the largest such <= n
+        assert field < n and field * 2 >= n  # next field is the largest power of two below N
 
 
 def test_generate_round_input_order_independent():
