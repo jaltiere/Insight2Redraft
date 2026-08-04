@@ -1,6 +1,15 @@
 from decimal import Decimal
 
-from app.bracket.engine import MatchupSide, TeamStanding, resolve_matchup, seed_field
+import pytest
+
+from app.bracket.engine import (
+    MatchupSide,
+    RemainingTeam,
+    TeamStanding,
+    generate_round,
+    resolve_matchup,
+    seed_field,
+)
 
 
 def _side(team_id, seed, starter, bench):
@@ -92,3 +101,75 @@ def test_seed_field_league_with_fewer_than_n_contributes_all():
     result = seed_field(standings, field_per_league=2)
     assert {s.team_id for s in result} == {1, 2, 3}
     assert [s.seed for s in result] == [1, 2, 3]  # contiguous 1..K
+
+
+def _rt(team_id, seed):
+    return RemainingTeam(team_id=team_id, seed=seed)
+
+
+def _teams(*seeds):
+    # team_id == seed * 10 for easy identification in assertions
+    return [_rt(seed * 10, seed) for seed in seeds]
+
+
+def _pairs(plan):
+    return [(g.high, g.low) for g in plan.games]
+
+
+def test_generate_round_four_no_byes():
+    plan = generate_round(_teams(1, 2, 3, 4))
+    assert plan.byes == []
+    assert _pairs(plan) == [(10, 40), (20, 30)]  # 1v4, 2v3
+
+
+def test_generate_round_eight_no_byes():
+    plan = generate_round(_teams(1, 2, 3, 4, 5, 6, 7, 8))
+    assert plan.byes == []
+    assert _pairs(plan) == [(10, 80), (20, 70), (30, 60), (40, 50)]
+
+
+def test_generate_round_two():
+    plan = generate_round(_teams(1, 2))
+    assert plan.byes == []
+    assert _pairs(plan) == [(10, 20)]
+
+
+def test_generate_round_six_byes_top_two():
+    plan = generate_round(_teams(1, 2, 3, 4, 5, 6))
+    assert plan.byes == [10, 20]  # seeds 1,2 bye
+    assert _pairs(plan) == [(30, 60), (40, 50)]  # 3v6, 4v5
+
+
+def test_generate_round_five_byes_top_three():
+    plan = generate_round(_teams(1, 2, 3, 4, 5))
+    assert plan.byes == [10, 20, 30]
+    assert _pairs(plan) == [(40, 50)]
+
+
+def test_generate_round_seven_bye_top_one():
+    plan = generate_round(_teams(1, 2, 3, 4, 5, 6, 7))
+    assert plan.byes == [10]
+    assert _pairs(plan) == [(20, 70), (30, 60), (40, 50)]
+
+
+def test_generate_round_three_bye_top_one():
+    plan = generate_round(_teams(1, 2, 3))
+    assert plan.byes == [10]
+    assert _pairs(plan) == [(20, 30)]
+
+
+def test_generate_round_field_reduces_to_power_of_two():
+    for n in range(2, 17):
+        plan = generate_round(_teams(*range(1, n + 1)))
+        field = len(plan.games) + len(plan.byes)
+        assert field & (field - 1) == 0  # next field is a power of two
+        assert field <= n and field * 2 >= n  # it's the largest such <= n
+
+
+def test_generate_round_input_order_independent():
+    assert generate_round(_teams(6, 1, 4, 2, 5, 3)) == generate_round(_teams(1, 2, 3, 4, 5, 6))
+
+
+def test_generate_round_requires_two():
+    with pytest.raises(ValueError):
+        generate_round(_teams(1))

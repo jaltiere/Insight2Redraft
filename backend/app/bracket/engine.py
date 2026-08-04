@@ -80,3 +80,42 @@ def seed_field(
 
     qualifiers.sort(key=_rank_key)
     return [SeededTeam(team_id=s.team_id, seed=i + 1) for i, s in enumerate(qualifiers)]
+
+
+def _is_power_of_two(n: int) -> bool:
+    return n & (n - 1) == 0  # valid for n >= 1
+
+
+def _largest_power_of_two_below(n: int) -> int:
+    """Largest power of two strictly less than n (n >= 2)."""
+    p = 1
+    while p * 2 < n:
+        p *= 2
+    return p
+
+
+def generate_round(remaining: Iterable[RemainingTeam]) -> RoundPlan:
+    """Reseed the survivors by original seed and pair high-vs-low, giving byes to
+    the top seeds when the field isn't a power of two (reducing it to the largest
+    power of two below N). Requires at least 2 teams; the caller treats a single
+    remaining team as the champion."""
+    ordered = sorted(remaining, key=lambda t: t.seed)
+    n = len(ordered)
+    if n < 2:
+        raise ValueError("generate_round requires at least 2 remaining teams")
+
+    if _is_power_of_two(n):
+        byes: list[int] = []
+        playing = ordered
+    else:
+        p = _largest_power_of_two_below(n)
+        b = 2 * p - n
+        byes = [t.team_id for t in ordered[:b]]
+        playing = ordered[b:]
+
+    m = len(playing)
+    games = [
+        RoundGame(high=playing[i].team_id, low=playing[m - 1 - i].team_id)
+        for i in range(m // 2)
+    ]
+    return RoundPlan(games=games, byes=byes)
