@@ -55,3 +55,28 @@ def resolve_matchup(a: MatchupSide, b: MatchupSide) -> int:
     if a.bench_points != b.bench_points:
         return a.team_id if a.bench_points > b.bench_points else b.team_id
     return a.team_id if a.seed < b.seed else b.team_id
+
+
+def _rank_key(s: TeamStanding) -> tuple[Fraction, Decimal, int]:
+    games = s.wins + s.losses + s.ties
+    win_pct = Fraction(s.wins * 2 + s.ties, games * 2) if games else Fraction(0)
+    # Better teams sort first: higher win%, then higher points_for, then lower team_id.
+    return (-win_pct, -s.points_for, s.team_id)
+
+
+def seed_field(
+    standings: Iterable[TeamStanding], field_per_league: int
+) -> list[SeededTeam]:
+    """Take the top ``field_per_league`` teams per league, pool them, and assign
+    global seeds 1..K ordered by (win%, points_for, team_id). A league with fewer
+    than ``field_per_league`` teams contributes all of them."""
+    by_league: dict[int, list[TeamStanding]] = {}
+    for standing in standings:
+        by_league.setdefault(standing.league_id, []).append(standing)
+
+    qualifiers: list[TeamStanding] = []
+    for teams in by_league.values():
+        qualifiers.extend(sorted(teams, key=_rank_key)[:field_per_league])
+
+    qualifiers.sort(key=_rank_key)
+    return [SeededTeam(team_id=s.team_id, seed=i + 1) for i, s in enumerate(qualifiers)]
