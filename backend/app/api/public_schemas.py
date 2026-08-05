@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from app.models import SeasonStatus
+from app.models import BracketStatus, SeasonStatus
 
 
 class SeasonSummary(BaseModel):
@@ -112,3 +112,36 @@ class OwnerProfile(BaseModel):
     avatar_url: str | None
     season_records: list[OwnerSeasonRecord]
     best_weekly: list[BestWeeklyEntry]
+
+
+class BracketTeamRef(BaseModel):
+    team_id: int
+    seed: int
+    league_name: str
+    owner: OwnerRef | None
+
+
+class BracketMatchupPublic(BaseModel):
+    round: int
+    nfl_week: int
+    bye: bool
+    is_finalized: bool
+    team_a: BracketTeamRef | None
+    team_b: BracketTeamRef | None
+    team_a_score: float | None
+    team_b_score: float | None
+    winner_team_id: int | None
+
+
+class BracketRoundPublic(BaseModel):
+    round: int
+    nfl_week: int
+    matchups: list[BracketMatchupPublic]
+
+
+class BracketPublic(BaseModel):
+    season_id: int
+    size: int
+    status: BracketStatus
+    seeds: list[BracketTeamRef]
+    rounds: list[BracketRoundPublic]

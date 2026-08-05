@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.security import hash_password
+from app.api.security import create_access_token, hash_password
 from app.db import get_db
 from app.main import create_app
 from app.models import Account, AccountRole
@@ -38,3 +38,14 @@ def make_account(db_session):
         return account
 
     return _make
+
+
+@pytest.fixture()
+def super_admin(make_account):
+    return make_account("root@example.com", "pw", role=AccountRole.SUPER_ADMIN)
+
+
+@pytest.fixture()
+def admin_headers(super_admin):
+    token = create_access_token(super_admin.id, super_admin.role)
+    return {"Authorization": f"Bearer {token}"}

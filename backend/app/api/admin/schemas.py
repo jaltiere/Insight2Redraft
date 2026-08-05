@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import AccountRole, SeasonStatus
+from app.models import AccountRole, BracketStatus, QualifiedVia, SeasonStatus
 
 
 class SeasonCreate(BaseModel):
@@ -149,3 +149,35 @@ class AccountAdminResponse(BaseModel):
 
 class GrantCreate(BaseModel):
     league_id: int
+
+
+class BracketSeedAdmin(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    seed: int
+    team_id: int
+    qualified_via: QualifiedVia
+
+
+class BracketMatchupAdmin(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    round: int
+    nfl_week: int
+    team_a_id: int | None
+    team_b_id: int | None
+    team_a_score: float | None
+    team_b_score: float | None
+    winner_team_id: int | None
+    is_finalized: bool
+    bye: bool
+
+
+class BracketAdminResponse(BaseModel):
+    id: int
+    season_id: int
+    size: int
+    status: BracketStatus
+    seeds: list[BracketSeedAdmin]
+    matchups: list[BracketMatchupAdmin]
