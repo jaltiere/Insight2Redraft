@@ -1,7 +1,14 @@
 from decimal import Decimal
 
 from app.api.security import create_access_token
-from app.models import AccountRole, Bracket, BracketStatus, SeasonStatus
+from app.models import (
+    AccountRole,
+    Bracket,
+    BracketSeed,
+    BracketStatus,
+    SeasonStatus,
+    WeeklyScore,
+)
 
 
 def _playoff_season_4(seed):
@@ -114,3 +121,61 @@ def test_admin_read_returns_pending_and_404(client, admin_headers, seed):
     resp = client.get(f"/admin/seasons/{season.id}/bracket", headers=admin_headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "pending"
+
+
+def _active_season_with_bracket(client, admin_headers, seed):
+    season = _playoff_season_4(seed)
+    client.post(f"/admin/seasons/{season.id}/bracket", headers=admin_headers)
+    client.post(f"/admin/seasons/{season.id}/bracket/approve", headers=admin_headers)
+    return season
+
+
+def test_finalize_round_advances(client, admin_headers, db_session, seed):
+    season = _active_season_with_bracket(client, admin_headers, seed)
+    bracket = db_session.query(Bracket).filter_by(season_id=season.id).one()
+    by_seed = {s.seed: s.team_id for s in db_session.query(BracketSeed).filter_by(bracket_id=bracket.id)}
+    for s, pts in [(1, "120"), (4, "100"), (2, "110"), (3, "90")]:
+        db_session.add(
+            WeeklyScore(
+                team_id=by_seed[s], week=15,
+                sleeper_points=Decimal(pts), recomputed_points=Decimal(pts),
+                bench_points=Decimal("0"),
+            )
+        )
+    db_session.commit()
+
+    resp = client.post(f"/admin/seasons/{season.id}/bracket/finalize-round", headers=admin_headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "active"
+    assert 2 in {m["round"] for m in body["matchups"]}  # next round created
+
+
+def test_finalize_scores_not_synced_409(client, admin_headers, seed):
+    season = _active_season_with_bracket(client, admin_headers, seed)
+    resp = client.post(f"/admin/seasons/{season.id}/bracket/finalize-round", headers=admin_headers)
+    assert resp.status_code == 409
+
+
+def test_finalize_not_active_409(client, admin_headers, seed):
+    season = _playoff_season_4(seed)
+    client.post(f"/admin/seasons/{season.id}/bracket", headers=admin_headers)  # PENDING, unapproved
+    resp = client.post(f"/admin/seasons/{season.id}/bracket/finalize-round", headers=admin_headers)
+    assert resp.status_code == 409
+
+
+def test_finalize_unknown_bracket_404(client, admin_headers, seed):
+    season = _playoff_season_4(seed)
+    assert client.post(
+        f"/admin/seasons/{season.id}/bracket/finalize-round", headers=admin_headers
+    ).status_code == 404
+
+
+def test_finalize_requires_super_admin(client, seed, make_account):
+    season = _playoff_season_4(seed)
+    assert client.post(f"/admin/seasons/{season.id}/bracket/finalize-round").status_code == 401
+    la = make_account("finla@e.com", "pw", role=AccountRole.LEAGUE_ADMIN)
+    headers = {"Authorization": f"Bearer {create_access_token(la.id, la.role)}"}
+    assert client.post(
+        f"/admin/seasons/{season.id}/bracket/finalize-round", headers=headers
+    ).status_code == 403

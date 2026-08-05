@@ -8,6 +8,12 @@ from app.api.admin.schemas import (
     BracketSeedAdmin,
 )
 from app.api.deps import require_super_admin
+from app.bracket.finalization import (
+    NothingToFinalize,
+    NotEnoughPlayoffWeeks,
+    ScoresNotSynced,
+    finalize_current_round,
+)
 from app.bracket.generation import BracketGenerationError, generate_bracket
 from app.db import get_db
 from app.models import (
@@ -103,4 +109,26 @@ def read_season_bracket(
     bracket = _get_bracket(db, season_id)
     if bracket is None:
         raise HTTPException(status_code=404, detail="Bracket not found")
+    return _bracket_response(db, bracket)
+
+
+@router.post(
+    "/seasons/{season_id}/bracket/finalize-round",
+    response_model=BracketAdminResponse,
+)
+def finalize_season_bracket_round(
+    season_id: int, db: Session = Depends(get_db)
+) -> BracketAdminResponse:
+    bracket = _get_bracket(db, season_id)
+    if bracket is None:
+        raise HTTPException(status_code=404, detail="Bracket not found")
+    if bracket.status is not BracketStatus.ACTIVE:
+        raise HTTPException(status_code=409, detail="Bracket is not active")
+    try:
+        finalize_current_round(db, bracket)
+    except (ScoresNotSynced, NothingToFinalize) as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except NotEnoughPlayoffWeeks as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    db.commit()
     return _bracket_response(db, bracket)
