@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI
 
 from app.api.admin.accounts import router as admin_accounts_router
+from app.api.admin.bracket import router as admin_bracket_router
 from app.api.admin.leagues import router as admin_leagues_router
 from app.api.admin.mapping import router as admin_mapping_router
 from app.api.admin.owners import router as admin_owners_router
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_mapping_router)
     app.include_router(admin_sync_router)
     app.include_router(admin_accounts_router)
+    app.include_router(admin_bracket_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:
