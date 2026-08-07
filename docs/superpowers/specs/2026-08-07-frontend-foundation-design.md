@@ -25,10 +25,15 @@ This is the first of the decomposed **frontend** cycles:
 ## Stack Decisions (settled)
 
 - **TypeScript** (typed over the API JSON contract).
-- **Vite + React 18**, package manager **npm** (Node 22 / npm 10 available).
-- **Tailwind CSS + shadcn/ui** (accessible Radix components copied into the repo;
-  a few base components to start).
-- **React Router v6** for routing; **TanStack Query** for server state.
+- **Vite + React 19**, package manager **npm** (Node 22 / npm 10 available).
+  (Pinned current at planning time: Vite 8, React 19, Vitest 4.)
+- **Tailwind CSS v4 + shadcn/ui** (Tailwind v4 uses the `@tailwindcss/vite`
+  plugin + `@import "tailwindcss"` in CSS — no v3-style `tailwind.config.js`
+  content array; shadcn writes CSS variables into the stylesheet). A few base
+  components to start.
+- **React Router v7** for routing, used as an **SPA library** (declarative /
+  data router — `createBrowserRouter` + `RouterProvider`), NOT framework/SSR
+  mode; **TanStack Query** for server state.
 - **Vitest + React Testing Library + MSW** for tests (MSW mocks the backend; no
   live server in tests).
 - **JWT in `localStorage`** (pragmatic for an admin-only 12h-expiry token; known
@@ -75,7 +80,7 @@ The backend (all merged) serves the API this consumes. FE-0 touches:
 ```
 frontend/
   index.html
-  package.json  vite.config.ts  tsconfig.json  tailwind.config.js
+  package.json  vite.config.ts  tsconfig.json  components.json  vitest.setup.ts
   .env.example                 # VITE_API_BASE_URL=http://localhost:8000
   src/
     main.tsx                   # React root: QueryClientProvider, RouterProvider, AuthProvider
