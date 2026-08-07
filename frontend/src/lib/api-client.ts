@@ -1,4 +1,5 @@
 import type { ApiError } from "@/types/api";
+import { clearToken, getToken } from "@/auth/token";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
@@ -7,7 +8,7 @@ export function isApiError(e: unknown): e is ApiError {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const token = localStorage.getItem("i2r_token");
+  const token = getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -18,7 +19,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   });
 
   if (res.status === 401) {
-    localStorage.removeItem("i2r_token");
+    clearToken();
   }
   if (!res.ok) {
     let detail = res.statusText;
