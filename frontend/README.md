@@ -1,32 +1,17 @@
-# React + TypeScript + Vite
+# Insight2Redraft — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript SPA (Vite) for the Insight2Redraft cross-league fantasy platform. Consumes the backend API under `backend/`.
 
-Currently, two official plugins are available:
+## Stack
+Vite, React, TypeScript, Tailwind CSS v4, shadcn/ui, React Router, TanStack Query. Tests: Vitest + React Testing Library + MSW. Lint: ESLint (flat config).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Develop
+```bash
+npm install
+npm run dev      # dev server (proxies /api -> http://localhost:8000)
+npm test         # vitest
+npm run build    # tsc -b && vite build
+npm run lint     # eslint .
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Set the API base via `VITE_API_BASE_URL` (see `.env.example`). In dev it defaults to `/api`, proxied to the backend.
