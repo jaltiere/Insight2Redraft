@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import sessionmaker
 
+from app.bracket.finalization import update_bracket_live_scores
 from app.config import settings
 from app.models import League, Season, SeasonStatus, Team, WeeklyScore
 from app.sleeper.client import SleeperClient
@@ -78,6 +79,12 @@ async def run_cycle(
         except Exception:
             logger.exception("league %s week %s sync failed", league_id, week)
             failed += 1
+
+    try:
+        with session_factory.begin() as session:
+            update_bracket_live_scores(session, season_id, week)
+    except Exception:
+        logger.exception("bracket live-score update failed")
 
     players_synced = await _maybe_sync_players(
         client, session_factory, clock, players_state, season_id, ruleset

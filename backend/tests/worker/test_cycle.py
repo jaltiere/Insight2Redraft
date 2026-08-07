@@ -1,8 +1,19 @@
 from datetime import timedelta
+from decimal import Decimal
 
 import pytest
 
-from app.models import League, Season, SeasonStatus, WeeklyScore
+from app.models import (
+    Bracket,
+    BracketMatchup,
+    BracketSeed,
+    BracketStatus,
+    League,
+    Season,
+    SeasonStatus,
+    Team,
+    WeeklyScore,
+)
 from app.worker.cycle import CycleResult, PlayersSyncState, run_cycle
 from tests.worker.conftest import UTC_NOW, fixed_clock, load_fixture, route_client
 
@@ -124,3 +135,40 @@ async def test_run_cycle_skips_players_when_recent(session_factory, monkeypatch)
 
     with session_factory() as session:
         assert session.query(Player).count() == 0
+
+
+async def test_run_cycle_updates_bracket_live_scores(session_factory):
+    with session_factory.begin() as session:
+        season = Season(year=2024, status=SeasonStatus.PLAYOFFS)
+        session.add(season)
+        session.flush()
+        league = League(season_id=season.id, sleeper_league_id="987654321", name="seed")
+        session.add(league)
+        session.flush()
+        t1 = Team(league_id=league.id, sleeper_roster_id=1)
+        t2 = Team(league_id=league.id, sleeper_roster_id=2)
+        session.add_all([t1, t2])
+        session.flush()
+        bracket = Bracket(season_id=season.id, size=2, status=BracketStatus.ACTIVE)
+        session.add(bracket)
+        session.flush()
+        session.add_all([
+            BracketSeed(bracket_id=bracket.id, team_id=t1.id, seed=1),
+            BracketSeed(bracket_id=bracket.id, team_id=t2.id, seed=2),
+        ])
+        session.add(
+            BracketMatchup(
+                bracket_id=bracket.id, round=1, nfl_week=5,
+                team_a_id=t1.id, team_b_id=t2.id, bye=False, is_finalized=False,
+            )
+        )
+
+    client = route_client(_base_routes())
+    result = await run_cycle(client, session_factory, fixed_clock(UTC_NOW), PlayersSyncState())
+    assert result.season_active is True
+
+    with session_factory() as session:
+        game = session.query(BracketMatchup).filter_by(round=1).one()
+        assert game.team_a_score is not None  # live score copied from recomputed_points
+        assert game.team_b_score is not None
+        assert game.winner_team_id is None and not game.is_finalized  # worker never finalizes
