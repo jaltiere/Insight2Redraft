@@ -3,6 +3,9 @@ import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { isApiError } from "@/lib/api-client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -23,25 +26,37 @@ export function LoginPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto mt-16 flex max-w-sm flex-col gap-3">
-      <h1 className="text-xl font-semibold">Sign in</h1>
-      <label className="flex flex-col gap-1">
-        Email
-        <input className="border p-2" value={email} onChange={(e) => setEmail(e.target.value)} />
-      </label>
-      <label className="flex flex-col gap-1">
-        Password
-        <input
-          className="border p-2"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <button className="border p-2" type="submit">
-        Sign in
-      </button>
-    </form>
+    <Card className="mx-auto mt-12 max-w-sm">
+      <CardHeader>
+        <CardTitle>Sign in</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email" className="text-sm font-medium">
+              Email
+            </label>
+            <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="password" className="text-sm font-medium">
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <Button type="submit">Sign in</Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
