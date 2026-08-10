@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { ThemeContext } from "@/theme/theme-context";
+import { ThemeContext, isTheme } from "@/theme/theme-context";
 import type { Theme } from "@/theme/theme-context";
 
 const KEY = "i2r_theme";
 const mediaQuery = () => window.matchMedia("(prefers-color-scheme: dark)");
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(
-    () => (localStorage.getItem(KEY) as Theme | null) ?? "system",
-  );
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const stored = localStorage.getItem(KEY);
+    return isTheme(stored) ? stored : "system";
+  });
   const [systemDark, setSystemDark] = useState(() => mediaQuery().matches);
 
   useEffect(() => {
