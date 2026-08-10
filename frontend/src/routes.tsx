@@ -3,6 +3,7 @@ import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { LoginPage } from "@/pages/LoginPage";
+import { NotFound } from "@/pages/NotFound";
 import { SeasonsPage } from "@/pages/SeasonsPage";
 
 export const router = createBrowserRouter([
@@ -11,6 +12,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <SeasonsPage /> },
       { path: "login", element: <LoginPage /> },
+      { path: "*", element: <NotFound /> },
     ],
   },
   {
