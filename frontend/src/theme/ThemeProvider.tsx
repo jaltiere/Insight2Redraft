@@ -4,37 +4,30 @@ import { ThemeContext, isTheme } from "@/theme/theme-context";
 import type { Theme } from "@/theme/theme-context";
 
 const KEY = "i2r_theme";
-const mediaQuery = () => window.matchMedia("(prefers-color-scheme: dark)");
+
+function initialTheme(): Theme {
+  const stored = localStorage.getItem(KEY);
+  if (isTheme(stored)) return stored;
+  // First visit: follow the OS preference, then it's a persisted light/dark choice.
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem(KEY);
-    return isTheme(stored) ? stored : "system";
-  });
-  const [systemDark, setSystemDark] = useState(() => mediaQuery().matches);
+  const [theme, setThemeState] = useState<Theme>(initialTheme);
 
   useEffect(() => {
-    const mq = mediaQuery();
-    const onChange = () => setSystemDark(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  const resolvedTheme: "light" | "dark" =
-    theme === "system" ? (systemDark ? "dark" : "light") : theme;
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
-  }, [resolvedTheme]);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const setTheme = useCallback((next: Theme) => {
     localStorage.setItem(KEY, next);
     setThemeState(next);
   }, []);
 
-  const value = useMemo(
-    () => ({ theme, resolvedTheme, setTheme }),
-    [theme, resolvedTheme, setTheme],
-  );
+  const toggle = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
+
+  const value = useMemo(() => ({ theme, setTheme, toggle }), [theme, setTheme, toggle]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

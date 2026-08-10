@@ -10,13 +10,13 @@ afterEach(() => {
 });
 
 function Probe() {
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme, toggle } = useTheme();
   return (
     <div>
       <span>theme:{theme}</span>
-      <span>resolved:{resolvedTheme}</span>
       <button onClick={() => setTheme("dark")}>dark</button>
       <button onClick={() => setTheme("light")}>light</button>
+      <button onClick={toggle}>toggle</button>
     </div>
   );
 }
@@ -29,10 +29,9 @@ function renderProbe() {
   );
 }
 
-test("defaults to system and resolves to light (matchMedia stub matches=false)", () => {
+test("defaults to the OS preference (matchMedia stub matches=false -> light)", () => {
   renderProbe();
-  expect(screen.getByText("theme:system")).toBeInTheDocument();
-  expect(screen.getByText("resolved:light")).toBeInTheDocument();
+  expect(screen.getByText("theme:light")).toBeInTheDocument();
   expect(document.documentElement.classList.contains("dark")).toBe(false);
 });
 
@@ -43,10 +42,13 @@ test("setTheme('dark') adds the .dark class and persists", async () => {
   expect(localStorage.getItem("i2r_theme")).toBe("dark");
 });
 
-test("setTheme('light') removes the .dark class", async () => {
+test("toggle flips light <-> dark", async () => {
   renderProbe();
-  await userEvent.click(screen.getByRole("button", { name: "dark" }));
-  await userEvent.click(screen.getByRole("button", { name: "light" }));
+  await userEvent.click(screen.getByRole("button", { name: "toggle" }));
+  expect(screen.getByText("theme:dark")).toBeInTheDocument();
+  expect(document.documentElement.classList.contains("dark")).toBe(true);
+  await userEvent.click(screen.getByRole("button", { name: "toggle" }));
+  expect(screen.getByText("theme:light")).toBeInTheDocument();
   expect(document.documentElement.classList.contains("dark")).toBe(false);
 });
 
