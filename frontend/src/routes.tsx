@@ -2,15 +2,17 @@ import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
+import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
-import { SeasonsPage } from "@/pages/SeasonsPage";
+import { NotFound } from "@/pages/NotFound";
 
 export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     children: [
-      { index: true, element: <SeasonsPage /> },
+      { index: true, element: <DashboardPage /> },
       { path: "login", element: <LoginPage /> },
+      { path: "*", element: <NotFound /> },
     ],
   },
   {
