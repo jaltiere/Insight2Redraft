@@ -26,6 +26,7 @@ test("renders owner header, league link, record, and the weekly table", async ()
   expect(screen.getByText("11-2")).toBeInTheDocument();
   // week rows present (weeks 1,2,3 from the mock)
   expect(screen.getByText("120.5")).toBeInTheDocument();
+  expect(await screen.findByRole("img", { name: /weekly points/i })).toBeInTheDocument();
 });
 
 test("flags a non-final week as Live", async () => {

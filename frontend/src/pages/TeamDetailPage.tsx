@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { StatChip } from "@/components/StatChip";
+import { WeeklyBarChart } from "@/components/WeeklyBarChart";
 import { Badge } from "@/components/ui/badge";
 import { NotFound } from "@/pages/NotFound";
 import { useTeam } from "@/features/useLeagueDetail";
@@ -62,31 +63,34 @@ export function TeamDetailPage() {
       {team.weekly_scores.length === 0 ? (
         <p className="text-muted-foreground">No weekly scores yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-muted-foreground">
-                <th className="px-4 py-2 font-medium">Week</th>
-                <th className="px-4 py-2 font-medium">Points</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {team.weekly_scores.map((w) => (
-                <tr key={w.week} className="border-t">
-                  <td className="px-4 py-2 tabular-nums">{w.week}</td>
-                  <td className="px-4 py-2 tabular-nums">{w.points.toLocaleString("en-US")}</td>
-                  <td className="px-4 py-2">
-                    {w.is_final ? (
-                      <span className="text-muted-foreground">Final</span>
-                    ) : (
-                      <Badge className="bg-highlight text-highlight-foreground">Live</Badge>
-                    )}
-                  </td>
+        <div className="space-y-4">
+          <WeeklyBarChart scores={team.weekly_scores} />
+          <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="px-4 py-2 font-medium">Week</th>
+                  <th className="px-4 py-2 font-medium">Points</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {team.weekly_scores.map((w) => (
+                  <tr key={w.week} className="border-t">
+                    <td className="px-4 py-2 tabular-nums">{w.week}</td>
+                    <td className="px-4 py-2 tabular-nums">{w.points.toLocaleString("en-US")}</td>
+                    <td className="px-4 py-2">
+                      {w.is_final ? (
+                        <span className="text-muted-foreground">Final</span>
+                      ) : (
+                        <Badge className="bg-highlight text-highlight-foreground">Live</Badge>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
