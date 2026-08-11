@@ -67,3 +67,24 @@ export interface LeagueDetail {
   scoring_validated: boolean;
   standings: TeamStanding[];
 }
+
+export interface WeeklyScoreEntry {
+  week: number;
+  points: number;
+  is_final: boolean;
+}
+
+export interface TeamDetail {
+  id: number;
+  league_id: number;
+  league_name: string;
+  season_year: number;
+  owner: OwnerRef | null;
+  wins: number;
+  losses: number;
+  ties: number;
+  points_for: number;
+  points_against: number;
+  league_finish: number | null;
+  weekly_scores: WeeklyScoreEntry[];
+}

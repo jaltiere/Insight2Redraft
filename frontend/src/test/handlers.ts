@@ -55,4 +55,20 @@ export const handlers = [
       ],
     });
   }),
+  http.get("/api/teams/:id", ({ params }) => {
+    const id = Number(params.id);
+    return HttpResponse.json({
+      id,
+      league_id: 3,
+      league_name: "Dynasty League",
+      season_year: 2024,
+      owner: { id: 301, first_name: "Jack", last_name: "Altiere", display_name: null, avatar_url: null },
+      wins: 11, losses: 2, ties: 0, points_for: 1612, points_against: 1400, league_finish: 1,
+      weekly_scores: [
+        { week: 1, points: 120.5, is_final: true },
+        { week: 2, points: 98.0, is_final: true },
+        { week: 3, points: 110.2, is_final: false },
+      ],
+    });
+  }),
 ];

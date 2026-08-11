@@ -1,18 +1,10 @@
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { PointsBar } from "@/components/PointsBar";
-import type { LeagueDetail, TeamStanding } from "@/types/api";
+import { ownerName, teamRecord } from "@/features/standings";
+import type { LeagueDetail } from "@/types/api";
 
 const TOP_N = 5;
-
-function ownerName(s: TeamStanding): string {
-  if (!s.owner) return "—";
-  return s.owner.display_name ?? `${s.owner.first_name} ${s.owner.last_name}`;
-}
-
-function record(s: TeamStanding): string {
-  return s.ties > 0 ? `${s.wins}-${s.losses}-${s.ties}` : `${s.wins}-${s.losses}`;
-}
 
 export function LeagueStandingsCard({ league }: { league: LeagueDetail }) {
   const rows = league.standings.slice(0, TOP_N);
@@ -49,13 +41,13 @@ export function LeagueStandingsCard({ league }: { league: LeagueDetail }) {
               <td className="px-4 py-2 font-medium">
                 {s.owner ? (
                   <Link to={`/owners/${s.owner.id}`} className="hover:text-primary hover:underline">
-                    {ownerName(s)}
+                    {ownerName(s.owner)}
                   </Link>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
               </td>
-              <td className="px-4 py-2 tabular-nums">{record(s)}</td>
+              <td className="px-4 py-2 tabular-nums">{teamRecord(s)}</td>
               <td className="px-4 py-2">
                 <div className="flex items-center gap-2">
                   <PointsBar value={s.points_for} max={maxPf} />
