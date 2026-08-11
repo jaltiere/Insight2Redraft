@@ -16,12 +16,18 @@ test("renders one labeled bar per week with rounded value labels", () => {
   expect(screen.getByText("121")).toBeInTheDocument(); // Math.round(120.5)
 });
 
-test("flags the non-final week as live for screen readers", () => {
+test("flags the non-final week as live via the accessible name", () => {
   render(<WeeklyBarChart scores={scores} />);
-  expect(screen.getByText(/week 3 \(live\)/i)).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /live \(not final\): week 3/i })).toBeInTheDocument();
 });
 
 test("exposes an accessible summary label", () => {
   render(<WeeklyBarChart scores={scores} />);
   expect(screen.getByRole("img", { name: /weekly points/i })).toBeInTheDocument();
+});
+
+test("does not mention live weeks in the accessible name when all weeks are final", () => {
+  render(<WeeklyBarChart scores={[{ week: 1, points: 100, is_final: true }]} />);
+  expect(screen.getByRole("img", { name: /^weekly points/i })).toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: /live/i })).toBeNull();
 });

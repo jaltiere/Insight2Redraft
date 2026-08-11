@@ -4,11 +4,16 @@ export function WeeklyBarChart({ scores }: { scores: WeeklyScoreEntry[] }) {
   const max = Math.max(1, ...scores.map((s) => s.points));
   const first = scores[0]?.week;
   const last = scores[scores.length - 1]?.week;
+  const liveWeeks = scores.filter((s) => !s.is_final).map((s) => s.week);
+  const liveNote =
+    liveWeeks.length > 0
+      ? `. Live (not final): week${liveWeeks.length > 1 ? "s" : ""} ${liveWeeks.join(", ")}`
+      : "";
 
   return (
     <div
       role="img"
-      aria-label={`Weekly points, weeks ${first} to ${last}`}
+      aria-label={`Weekly points, weeks ${first} to ${last}${liveNote}`}
       className="flex items-end gap-2 overflow-x-auto rounded-xl border bg-card p-4 shadow-sm"
     >
       {scores.map((s) => {
@@ -22,10 +27,7 @@ export function WeeklyBarChart({ scores }: { scores: WeeklyScoreEntry[] }) {
                 style={{ height: `${heightPct}%` }}
               />
             </div>
-            <span className="text-xs tabular-nums text-muted-foreground">
-              W{s.week}
-              {!s.is_final && <span className="sr-only"> — week {s.week} (live)</span>}
-            </span>
+            <span className="text-xs tabular-nums text-muted-foreground">W{s.week}</span>
           </div>
         );
       })}
