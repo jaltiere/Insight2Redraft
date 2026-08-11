@@ -49,7 +49,7 @@ export function TeamDetailPage() {
             )}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Season {team.season_year} · <span>{teamRecord(team)}</span>{team.league_finish != null ? ` · Finished ${ordinal(team.league_finish)}` : ""}
+            Season {team.season_year} · {teamRecord(team)}{team.league_finish != null ? ` · Finished ${ordinal(team.league_finish)}` : ""}
           </p>
         </div>
       </div>

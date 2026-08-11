@@ -87,7 +87,7 @@ export function LeagueDetailPage() {
                 <td className="px-4 py-2 text-right">
                   <Link
                     to={`/teams/${s.team_id}`}
-                    aria-label={`View team detail for ${ownerName(s.owner)}`}
+                    aria-label={s.owner ? `View team detail for ${ownerName(s.owner)}` : "View team detail"}
                     className="text-primary hover:underline"
                   >
                     →

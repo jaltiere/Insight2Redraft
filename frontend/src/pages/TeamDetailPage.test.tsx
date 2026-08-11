@@ -23,7 +23,7 @@ test("renders owner header, league link, record, and the weekly table", async ()
   renderAt("/teams/31");
   expect(await screen.findByRole("heading", { name: "Jack Altiere" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Dynasty League" })).toHaveAttribute("href", "/leagues/3");
-  expect(screen.getByText("11-2")).toBeInTheDocument();
+  expect(screen.getByText(/11-2/)).toBeInTheDocument();
   // week rows present (weeks 1,2,3 from the mock)
   expect(screen.getByText("120.5")).toBeInTheDocument();
   expect(await screen.findByRole("img", { name: /weekly points/i })).toBeInTheDocument();

@@ -32,3 +32,22 @@ test("shows not-found on a 404", async () => {
   renderAt("/leagues/999");
   expect(await screen.findByText(/league not found/i)).toBeInTheDocument();
 });
+
+test("null-owner row shows an em-dash and no owner link, and a plain team-detail label", async () => {
+  server.use(
+    http.get("/api/leagues/:id", () =>
+      HttpResponse.json({
+        id: 3, name: "Dynasty League", season_id: 1, season_year: 2024, scoring_validated: true,
+        standings: [
+          { team_id: 31, owner: null, wins: 5, losses: 5, ties: 0, points_for: 1000, points_against: 1000, league_finish: null },
+        ],
+      }),
+    ),
+  );
+  renderAt("/leagues/3");
+  expect(await screen.findByRole("heading", { name: "Dynasty League" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "View team detail" })).toHaveAttribute("href", "/teams/31");
+  expect(screen.queryByRole("link", { name: "—" })).toBeNull();
+  // owner cell shows the em-dash
+  expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+});
