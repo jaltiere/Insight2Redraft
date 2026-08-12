@@ -1,6 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
+import { AdminHome } from "@/pages/admin/AdminHome";
+import { AdminSectionStub } from "@/pages/admin/AdminSectionStub";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LeagueDetailPage } from "@/pages/LeagueDetailPage";
@@ -22,6 +24,19 @@ export const router = createBrowserRouter([
   {
     path: "admin",
     element: <ProtectedRoute />,
-    children: [{ element: <AdminLayout />, children: [{ index: true, element: <p>Admin home</p> }] }],
+    children: [
+      {
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <AdminHome /> },
+          { path: "seasons", element: <AdminSectionStub title="Seasons" /> },
+          { path: "owners", element: <AdminSectionStub title="Owners" /> },
+          {
+            element: <ProtectedRoute requireRole="super_admin" />,
+            children: [{ path: "accounts", element: <AdminSectionStub title="Accounts" /> }],
+          },
+        ],
+      },
+    ],
   },
 ]);

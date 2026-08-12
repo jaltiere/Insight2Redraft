@@ -1,7 +1,8 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { apiClient } from "@/lib/api-client";
-import { clearToken, getToken, setToken } from "@/auth/token";
+import { clearToken, getToken, setToken, subscribeToken } from "@/auth/token";
+import { queryClient } from "@/lib/queryClient";
 import type { Account } from "@/types/api";
 
 interface AuthContextValue {
@@ -39,6 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
+  }, []);
+
+  // A mid-session 401 (or explicit logout) clears the token via the api-client;
+  // when the token goes null, drop the cached account + queries so ProtectedRoute
+  // redirects to login instead of showing a stuck "authenticated" state.
+  useEffect(() => {
+    return subscribeToken((token) => {
+      if (token === null) {
+        setAccount(null);
+        queryClient.clear();
+      }
+    });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
