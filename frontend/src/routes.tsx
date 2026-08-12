@@ -3,8 +3,10 @@ import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { LeagueDetailPage } from "@/pages/LeagueDetailPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { NotFound } from "@/pages/NotFound";
+import { TeamDetailPage } from "@/pages/TeamDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -12,6 +14,8 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "login", element: <LoginPage /> },
+      { path: "leagues/:id", element: <LeagueDetailPage /> },
+      { path: "teams/:id", element: <TeamDetailPage /> },
       { path: "*", element: <NotFound /> },
     ],
   },
