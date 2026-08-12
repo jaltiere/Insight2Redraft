@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { isApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation() as { state?: { from?: { pathname?: string } } };
+  const from = location.state?.from?.pathname ?? "/admin";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,7 @@ export function LoginPage() {
     setError(null);
     try {
       await login(email, password);
-      navigate("/admin", { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       setError(isApiError(err) ? err.detail : "Login failed");
     }
