@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NotFound } from "@/pages/NotFound";
 import { SeasonFormDialog } from "./SeasonFormDialog";
+import { LeagueSetupDialog } from "./LeagueSetupDialog";
 import { isApiError } from "@/lib/api-client";
 
 export function SeasonDetailPage() {
@@ -45,7 +46,9 @@ export function SeasonDetailPage() {
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-semibold">Leagues ({season.leagues.length})</h2>
-        {/* Task 4 adds the Add-league button here */}
+        {isSuper && (
+          <LeagueSetupDialog mode="add" seasonId={season.id} trigger={<Button size="sm">+ Add league</Button>} />
+        )}
       </div>
       {season.leagues.length === 0 ? (
         <p className="text-muted-foreground">No leagues yet.</p>
@@ -68,7 +71,16 @@ export function SeasonDetailPage() {
                       ? <Badge variant="secondary">✓ valid</Badge>
                       : <Badge variant="outline">⚠ unverified</Badge>}
                   </td>
-                  <td className="px-4 py-2 text-right">{/* Task 4/5 add row actions */}</td>
+                  <td className="px-4 py-2 text-right">
+                    {isSuper && (
+                      <LeagueSetupDialog
+                        mode="resync"
+                        seasonId={season.id}
+                        leagueId={lg.id}
+                        trigger={<Button variant="outline" size="sm">Resync</Button>}
+                      />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
