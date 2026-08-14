@@ -18,6 +18,7 @@ export function LeagueRowActions({
   const [syncResult, setSyncResult] = useState<SyncNowResponse | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function onSync() {
     setSyncError(null); setSyncResult(null);
@@ -29,8 +30,13 @@ export function LeagueRowActions({
   }
 
   async function onDelete() {
-    await del.mutateAsync(leagueId);
-    setConfirmOpen(false);
+    setDeleteError(null);
+    try {
+      await del.mutateAsync(leagueId);
+      setConfirmOpen(false);
+    } catch (e) {
+      setDeleteError(isApiError(e) ? e.detail : "Delete failed");
+    }
   }
 
   return (
@@ -51,13 +57,17 @@ export function LeagueRowActions({
         />
       )}
       {canManage && (
-        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <Dialog
+          open={confirmOpen}
+          onOpenChange={(o) => { setConfirmOpen(o); setDeleteError(null); }}
+        >
           <DialogTrigger asChild><Button variant="destructive" size="sm">Delete</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Delete {leagueName}?</DialogTitle>
               <DialogDescription>This removes the league and its data from the season.</DialogDescription>
             </DialogHeader>
+            {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
             <DialogFooter>
               <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
               <Button variant="destructive" onClick={onDelete} disabled={del.isPending}>Confirm</Button>

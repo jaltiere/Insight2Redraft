@@ -47,3 +47,16 @@ test("Delete confirms then removes the league", async () => {
   // after 204 + invalidate, the confirm dialog closes
   expect(screen.queryByRole("button", { name: /confirm/i })).toBeNull();
 });
+
+test("Delete failure keeps the dialog open and shows the error", async () => {
+  server.use(
+    http.delete("/api/admin/leagues/:id", () =>
+      HttpResponse.json({ detail: "League is in use" }, { status: 409 })),
+  );
+  renderAt("super_admin");
+  const del = (await screen.findAllByRole("button", { name: /^delete$/i }))[0];
+  await userEvent.click(del);
+  await userEvent.click(await screen.findByRole("button", { name: /confirm/i }));
+  expect(await screen.findByText(/in use/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /confirm/i })).toBeInTheDocument();
+});
