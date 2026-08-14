@@ -55,7 +55,7 @@ export function LeagueSetupDialog(props: Props) {
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="font-semibold">{result.name}</span>
-              <Badge variant="secondary">Added</Badge>
+              <Badge variant="secondary">{props.mode === "add" ? "Added" : "Resynced"}</Badge>
               {result.scoring_validated
                 ? <Badge variant="secondary">✓ scoring valid</Badge>
                 : <Badge variant="outline">⚠ scoring differs</Badge>}
@@ -83,7 +83,7 @@ export function LeagueSetupDialog(props: Props) {
             )}
             {!result.scoring_validated && (
               <p className="text-xs text-muted-foreground">
-                Added regardless — this flag is advisory. Fix the season ruleset then Resync, or leave as-is.
+                {props.mode === "add" ? "Added" : "Resynced"} regardless — this flag is advisory. Fix the season ruleset then Resync, or leave as-is.
               </p>
             )}
           </div>

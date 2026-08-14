@@ -45,3 +45,13 @@ test("creating a duplicate year shows the 409 inline", async () => {
   await userEvent.click(screen.getByRole("button", { name: /create/i }));
   expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
 });
+
+test("resets the create form across dialog re-opens", async () => {
+  renderPage();
+  await userEvent.click(await screen.findByRole("button", { name: /new season/i }));
+  await userEvent.type(screen.getByLabelText(/year/i), "2099");
+  await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+  await userEvent.click(await screen.findByRole("button", { name: /new season/i }));
+  expect(screen.getByLabelText(/year/i)).toHaveValue("");
+});

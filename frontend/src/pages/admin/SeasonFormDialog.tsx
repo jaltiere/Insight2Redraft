@@ -28,6 +28,14 @@ export function SeasonFormDialog({ trigger, season }: { trigger: ReactNode; seas
   const update = useUpdateSeason(season?.id ?? 0);
   const pending = create.isPending || update.isPending;
 
+  function reset() {
+    setYear(season ? String(season.year) : "");
+    setStatus(season?.status ?? "setup");
+    setField(String(season?.playoff_field_per_league ?? 2));
+    setWeeks((season?.nfl_playoff_weeks ?? []).join(", "));
+    setError(null);
+  }
+
   async function onSubmit() {
     setError(null);
     try {
@@ -52,7 +60,7 @@ export function SeasonFormDialog({ trigger, season }: { trigger: ReactNode; seas
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) reset(); }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
