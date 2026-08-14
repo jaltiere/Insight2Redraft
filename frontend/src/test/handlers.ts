@@ -114,4 +114,52 @@ export const handlers = [
     HttpResponse.json({ league_id: Number(params.id), week: 14, teams_synced: 12, rosters_skipped: 0, mismatches: 0 }),
   ),
   http.delete("/api/admin/leagues/:id", () => new HttpResponse(null, { status: 204 })),
+  // --- admin: owners (FE-3c) ---
+  http.get("/api/admin/owners", ({ request }) => {
+    const q = (new URL(request.url).searchParams.get("q") ?? "").toLowerCase();
+    const all = [
+      { id: 1, first_name: "Jack", last_name: "Altiere", email: "jack@ex.com", display_name: "JackA", avatar_url: null, notes: "commish" },
+      { id: 2, first_name: "Maria", last_name: "Pappas", email: "maria@ex.com", display_name: null, avatar_url: null, notes: null },
+    ];
+    const rows = q ? all.filter((o) => `${o.first_name} ${o.last_name} ${o.email ?? ""}`.toLowerCase().includes(q)) : all;
+    return HttpResponse.json(rows);
+  }),
+  http.post("/api/admin/owners", async ({ request }) => {
+    const b = (await request.json()) as { email?: string | null };
+    if (b.email === "dupe@ex.com") return HttpResponse.json({ detail: "Owner email already exists" }, { status: 409 });
+    return HttpResponse.json({ id: 99, first_name: "New", last_name: "Owner", email: b.email ?? null, display_name: null, avatar_url: null, notes: null }, { status: 201 });
+  }),
+  http.get("/api/admin/owners/:id", ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id), first_name: "Jack", last_name: "Altiere", email: "jack@ex.com",
+      display_name: "JackA", avatar_url: null, notes: "commish",
+      sleeper_links: [{ sleeper_user_id: "u1", season: 2024, sleeper_display_name: "jaltiere" }],
+    }),
+  ),
+  http.patch("/api/admin/owners/:id", async ({ params, request }) => {
+    const b = (await request.json()) as Record<string, unknown>;
+    if (b.email === "dupe@ex.com") return HttpResponse.json({ detail: "Owner email already exists" }, { status: 409 });
+    return HttpResponse.json({ id: Number(params.id), first_name: "Jack", last_name: "Altiere", email: "jack@ex.com", display_name: "JackA", avatar_url: null, notes: null, ...b });
+  }),
+  // --- admin: team mapping (FE-3c) ---
+  http.get("/api/admin/leagues/:id/teams", () =>
+    HttpResponse.json([
+      { team_id: 31, sleeper_roster_id: 3, sleeper_user_id: "u1", sleeper_display_name: "jaltiere", owner: { id: 1, first_name: "Jack", last_name: "Altiere", display_name: "JackA" } },
+      { team_id: 32, sleeper_roster_id: 5, sleeper_user_id: "u2", sleeper_display_name: "mpappas", owner: null },
+    ]),
+  ),
+  http.patch("/api/admin/leagues/:lid/teams/:tid", async ({ params, request }) => {
+    const b = (await request.json()) as { owner_id: number };
+    if (b.owner_id === 0) return HttpResponse.json({ detail: "Owner does not exist" }, { status: 422 });
+    return HttpResponse.json({ team_id: Number(params.tid), sleeper_roster_id: 5, sleeper_user_id: "u2", sleeper_display_name: "mpappas", owner: { id: b.owner_id, first_name: "Maria", last_name: "Pappas", display_name: null } });
+  }),
+  // --- public: owner profile (FE-3c) ---
+  http.get("/api/owners/:id", ({ params }) => {
+    if (params.id === "404") return HttpResponse.json({ detail: "Owner not found" }, { status: 404 });
+    return HttpResponse.json({
+      id: Number(params.id), first_name: "Jack", last_name: "Altiere", display_name: "JackA", avatar_url: null,
+      season_records: [{ season_year: 2024, league_id: 3, league_name: "Dynasty League", wins: 11, losses: 2, ties: 0, points_for: 1612, points_against: 1400, league_finish: 1 }],
+      best_weekly: [{ season_year: 2024, league_name: "Dynasty League", week: 5, points: 155.2 }],
+    });
+  }),
 ];
