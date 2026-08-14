@@ -12,7 +12,9 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        // Override with API_PROXY_TARGET when the backend runs on a non-default
+        // port (e.g. API_PROXY_TARGET=http://localhost:8001 npm run dev).
+        target: process.env.API_PROXY_TARGET || "http://localhost:8000",
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api/, ""),
       },
