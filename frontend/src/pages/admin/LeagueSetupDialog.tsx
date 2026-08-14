@@ -41,7 +41,7 @@ export function LeagueSetupDialog(props: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); reset(); }}>
       <DialogTrigger asChild>{props.trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>

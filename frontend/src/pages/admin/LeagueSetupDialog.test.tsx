@@ -41,3 +41,17 @@ test("shows the 422 not-found error", async () => {
   await userEvent.click(screen.getByRole("button", { name: /^add$/i }));
   expect(await screen.findByText(/sleeper league not found/i)).toBeInTheDocument();
 });
+
+test("does not leak result state across dialog re-opens", async () => {
+  renderAdd();
+  await userEvent.click(screen.getByRole("button", { name: "Add league" }));
+  await userEvent.type(screen.getByLabelText(/sleeper league id/i), "abc123");
+  await userEvent.click(screen.getByRole("button", { name: /^add$/i }));
+  expect(await screen.findByText(/added/i)).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("button", { name: /^done$/i }));
+  await userEvent.click(screen.getByRole("button", { name: "Add league" }));
+
+  expect(screen.queryByText(/added/i)).toBeNull();
+  expect(screen.getByLabelText(/sleeper league id/i)).toHaveValue("");
+});
