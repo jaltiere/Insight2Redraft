@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { NotFound } from "@/pages/NotFound";
 import { SeasonFormDialog } from "./SeasonFormDialog";
 import { LeagueSetupDialog } from "./LeagueSetupDialog";
+import { LeagueRowActions } from "./LeagueRowActions";
 import { isApiError } from "@/lib/api-client";
 
 export function SeasonDetailPage() {
@@ -26,6 +27,7 @@ export function SeasonDetailPage() {
 
   const season = q.data;
   const isSuper = role === "super_admin";
+  const canSync = season.status === "regular" || season.status === "playoffs";
 
   return (
     <div>
@@ -72,14 +74,13 @@ export function SeasonDetailPage() {
                       : <Badge variant="outline">⚠ unverified</Badge>}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {isSuper && (
-                      <LeagueSetupDialog
-                        mode="resync"
-                        seasonId={season.id}
-                        leagueId={lg.id}
-                        trigger={<Button variant="outline" size="sm">Resync</Button>}
-                      />
-                    )}
+                    <LeagueRowActions
+                      seasonId={season.id}
+                      leagueId={lg.id}
+                      leagueName={lg.name}
+                      canManage={isSuper}
+                      canSync={canSync}
+                    />
                   </td>
                 </tr>
               ))}
