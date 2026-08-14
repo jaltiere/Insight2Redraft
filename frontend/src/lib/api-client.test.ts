@@ -32,4 +32,15 @@ describe("apiClient", () => {
       expect(isApiError(e)).toBe(true);
     }
   });
+
+  it("patch sends a PATCH and returns the body", async () => {
+    server.use(http.patch("/api/admin/seasons/1", () => HttpResponse.json({ id: 1, year: 2025 })));
+    const res = await apiClient.patch<{ id: number; year: number }>("/admin/seasons/1", { status: "regular" });
+    expect(res).toEqual({ id: 1, year: 2025 });
+  });
+
+  it("delete sends a DELETE and resolves on 204", async () => {
+    server.use(http.delete("/api/admin/leagues/9", () => new HttpResponse(null, { status: 204 })));
+    await expect(apiClient.delete<void>("/admin/leagues/9")).resolves.toBeUndefined();
+  });
 });

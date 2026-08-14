@@ -1,17 +1,14 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { RolePill } from "@/components/RolePill";
-
-const NAV = [
-  { to: "/admin", label: "Home", end: true },
-  { to: "/admin/seasons", label: "Seasons" },
-  { to: "/admin/owners", label: "Owners" },
-  { to: "/admin/accounts", label: "Accounts", superOnly: true },
-] as const;
+import { visibleSections } from "@/features/adminSections";
 
 export function AdminLayout() {
   const { account, role, logout } = useAuth();
-  const items = NAV.filter((n) => !("superOnly" in n && n.superOnly) || role === "super_admin");
+  const items = [
+    { to: "/admin", label: "Home", end: true },
+    ...visibleSections(role).map((s) => ({ to: s.to, label: s.label, end: false })),
+  ];
 
   return (
     <div className="flex min-h-screen">
@@ -24,11 +21,9 @@ export function AdminLayout() {
             <NavLink
               key={n.to}
               to={n.to}
-              end={"end" in n ? n.end : undefined}
+              end={n.end}
               className={({ isActive }) =>
-                `rounded-md px-3 py-2 text-sm ${
-                  isActive ? "bg-primary text-primary-foreground" : "hover:bg-white/10"
-                }`
+                `rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-white/10"}`
               }
             >
               {n.label}

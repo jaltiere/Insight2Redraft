@@ -71,4 +71,47 @@ export const handlers = [
       ],
     });
   }),
+  // --- admin: seasons & leagues (FE-3b) ---
+  http.post("/api/admin/seasons", async ({ request }) => {
+    const body = (await request.json()) as { year: number };
+    if (body.year === 2024) {
+      return HttpResponse.json({ detail: "Season year already exists" }, { status: 409 });
+    }
+    return HttpResponse.json(
+      { id: 99, year: body.year, status: "setup", scoring_ruleset_id: null, playoff_field_per_league: 2, nfl_playoff_weeks: [] },
+      { status: 201 },
+    );
+  }),
+  http.patch("/api/admin/seasons/:id", async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      id: Number(params.id), year: 2024, status: "regular", scoring_ruleset_id: null,
+      playoff_field_per_league: 2, nfl_playoff_weeks: [15, 16, 17], ...body,
+    });
+  }),
+  http.post("/api/admin/seasons/:id/leagues", async ({ request }) => {
+    const body = (await request.json()) as { sleeper_league_id: string };
+    if (body.sleeper_league_id === "notfound") {
+      return HttpResponse.json({ detail: "Sleeper league not found" }, { status: 422 });
+    }
+    const differs = body.sleeper_league_id === "diffs";
+    return HttpResponse.json(
+      {
+        league_id: 5, name: "New League", scoring_validated: !differs,
+        diffs: differs ? [{ category: "Pass TD", league_value: 6, platform_value: 4 }] : [],
+        teams: [{ team_id: 51, sleeper_roster_id: 1, sleeper_user_id: "u1" }],
+      },
+      { status: 201 },
+    );
+  }),
+  http.post("/api/admin/leagues/:id/resync-setup", ({ params }) =>
+    HttpResponse.json({
+      league_id: Number(params.id), name: "Dynasty League", scoring_validated: true, diffs: [],
+      teams: [{ team_id: 31, sleeper_roster_id: 1, sleeper_user_id: "u1" }],
+    }),
+  ),
+  http.post("/api/admin/leagues/:id/sync", ({ params }) =>
+    HttpResponse.json({ league_id: Number(params.id), week: 14, teams_synced: 12, rosters_skipped: 0, mismatches: 0 }),
+  ),
+  http.delete("/api/admin/leagues/:id", () => new HttpResponse(null, { status: 204 })),
 ];

@@ -1,15 +1,10 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
-
-const SECTIONS = [
-  { to: "/admin/seasons", title: "Seasons", desc: "Create & edit seasons, add leagues, sync, brackets." },
-  { to: "/admin/owners", title: "Owners", desc: "Owner records & per-team mapping." },
-  { to: "/admin/accounts", title: "Accounts", desc: "League-admin accounts & league grants.", superOnly: true },
-] as const;
+import { visibleSections } from "@/features/adminSections";
 
 export function AdminHome() {
   const { account, role } = useAuth();
-  const sections = SECTIONS.filter((s) => !("superOnly" in s && s.superOnly) || role === "super_admin");
+  const sections = visibleSections(role);
 
   return (
     <div>
@@ -24,7 +19,7 @@ export function AdminHome() {
             to={s.to}
             className="rounded-xl border bg-card p-4 shadow-sm transition-colors hover:border-primary"
           >
-            <h2 className="font-semibold text-primary">{s.title}</h2>
+            <h2 className="font-semibold text-primary">{s.label}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
           </Link>
         ))}

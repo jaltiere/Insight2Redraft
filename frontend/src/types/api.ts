@@ -88,3 +88,47 @@ export interface TeamDetail {
   league_finish: number | null;
   weekly_scores: WeeklyScoreEntry[];
 }
+
+export interface SeasonAdminResponse {
+  id: number;
+  year: number;
+  status: SeasonStatus;
+  scoring_ruleset_id: number | null;
+  playoff_field_per_league: number;
+  nfl_playoff_weeks: number[];
+}
+
+export interface SeasonCreateBody {
+  year: number;
+  playoff_field_per_league: number;
+  nfl_playoff_weeks: number[];
+  status: SeasonStatus;
+}
+
+export interface SeasonUpdateBody {
+  playoff_field_per_league?: number;
+  nfl_playoff_weeks?: number[];
+  status?: SeasonStatus;
+}
+
+export interface ScoringDiff {
+  category: string;
+  league_value: number;
+  platform_value: number;
+}
+
+export interface LeagueSetupResponse {
+  league_id: number;
+  name: string;
+  scoring_validated: boolean;
+  diffs: ScoringDiff[];
+  teams: { team_id: number; sleeper_roster_id: number; sleeper_user_id: string | null }[];
+}
+
+export interface SyncNowResponse {
+  league_id: number;
+  week: number;
+  teams_synced: number;
+  rosters_skipped: number;
+  mismatches: number;
+}
