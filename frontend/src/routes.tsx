@@ -3,6 +3,8 @@ import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { AdminHome } from "@/pages/admin/AdminHome";
 import { AdminSectionStub } from "@/pages/admin/AdminSectionStub";
+import { OwnersListPage } from "@/pages/admin/OwnersListPage";
+import { OwnerDetailPage } from "@/pages/admin/OwnerDetailPage";
 import { SeasonDetailPage } from "@/pages/admin/SeasonDetailPage";
 import { SeasonsListPage } from "@/pages/admin/SeasonsListPage";
 import { PublicLayout } from "@/layouts/PublicLayout";
@@ -33,7 +35,8 @@ export const router = createBrowserRouter([
           { index: true, element: <AdminHome /> },
           { path: "seasons", element: <SeasonsListPage /> },
           { path: "seasons/:id", element: <SeasonDetailPage /> },
-          { path: "owners", element: <AdminSectionStub title="Owners" /> },
+          { path: "owners", element: <OwnersListPage /> },
+          { path: "owners/:id", element: <OwnerDetailPage /> },
           {
             element: <ProtectedRoute requireRole="super_admin" />,
             children: [{ path: "accounts", element: <AdminSectionStub title="Accounts" /> }],

@@ -132,3 +132,71 @@ export interface SyncNowResponse {
   rosters_skipped: number;
   mismatches: number;
 }
+
+export interface OwnerAdminResponse {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  notes: string | null;
+}
+
+export interface OwnerSleeperLinkRef {
+  sleeper_user_id: string;
+  season: number;
+  sleeper_display_name: string | null;
+}
+
+export interface OwnerAdminDetail extends OwnerAdminResponse {
+  sleeper_links: OwnerSleeperLinkRef[];
+}
+
+export interface OwnerCreateBody {
+  first_name: string;
+  last_name: string;
+  email?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  notes?: string | null;
+}
+
+export type OwnerUpdateBody = Partial<OwnerCreateBody>;
+
+export interface TeamMappingRow {
+  team_id: number;
+  sleeper_roster_id: number;
+  sleeper_user_id: string | null;
+  sleeper_display_name: string | null;
+  owner: OwnerRef | null;
+}
+
+export interface OwnerSeasonRecord {
+  season_year: number;
+  league_id: number;
+  league_name: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  points_for: number;
+  points_against: number;
+  league_finish: number | null;
+}
+
+export interface BestWeeklyEntry {
+  season_year: number;
+  league_name: string;
+  week: number;
+  points: number;
+}
+
+export interface OwnerProfile {
+  id: number;
+  first_name: string;
+  last_name: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  season_records: OwnerSeasonRecord[];
+  best_weekly: BestWeeklyEntry[];
+}
