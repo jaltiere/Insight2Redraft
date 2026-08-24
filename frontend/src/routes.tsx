@@ -5,6 +5,7 @@ import { AdminHome } from "@/pages/admin/AdminHome";
 import { AdminSectionStub } from "@/pages/admin/AdminSectionStub";
 import { OwnersListPage } from "@/pages/admin/OwnersListPage";
 import { OwnerDetailPage } from "@/pages/admin/OwnerDetailPage";
+import { MappingPage } from "@/pages/admin/MappingPage";
 import { SeasonDetailPage } from "@/pages/admin/SeasonDetailPage";
 import { SeasonsListPage } from "@/pages/admin/SeasonsListPage";
 import { PublicLayout } from "@/layouts/PublicLayout";
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
           { index: true, element: <AdminHome /> },
           { path: "seasons", element: <SeasonsListPage /> },
           { path: "seasons/:id", element: <SeasonDetailPage /> },
+          { path: "leagues/:id/mapping", element: <MappingPage /> },
           { path: "owners", element: <OwnersListPage /> },
           { path: "owners/:id", element: <OwnerDetailPage /> },
           {

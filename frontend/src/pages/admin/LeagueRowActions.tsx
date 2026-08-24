@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useDeleteLeague, useSyncLeague } from "@/features/adminSeasons";
 import { isApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,9 @@ export function LeagueRowActions({
         </span>
       )}
       {syncError && <span className="text-xs text-destructive">{syncError}</span>}
+      <Button asChild variant="outline" size="sm">
+        <Link to={`/admin/leagues/${leagueId}/mapping`}>Map owners</Link>
+      </Button>
       {canSync && (
         <Button variant="outline" size="sm" onClick={onSync} disabled={sync.isPending}>Sync now</Button>
       )}
