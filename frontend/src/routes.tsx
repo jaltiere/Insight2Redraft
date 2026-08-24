@@ -5,6 +5,7 @@ import { AdminHome } from "@/pages/admin/AdminHome";
 import { AdminSectionStub } from "@/pages/admin/AdminSectionStub";
 import { OwnersListPage } from "@/pages/admin/OwnersListPage";
 import { OwnerDetailPage } from "@/pages/admin/OwnerDetailPage";
+import { MappingPage } from "@/pages/admin/MappingPage";
 import { SeasonDetailPage } from "@/pages/admin/SeasonDetailPage";
 import { SeasonsListPage } from "@/pages/admin/SeasonsListPage";
 import { PublicLayout } from "@/layouts/PublicLayout";
@@ -12,6 +13,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { LeagueDetailPage } from "@/pages/LeagueDetailPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { NotFound } from "@/pages/NotFound";
+import { OwnerProfilePage } from "@/pages/OwnerProfilePage";
 import { TeamDetailPage } from "@/pages/TeamDetailPage";
 
 export const router = createBrowserRouter([
@@ -22,6 +24,7 @@ export const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "leagues/:id", element: <LeagueDetailPage /> },
       { path: "teams/:id", element: <TeamDetailPage /> },
+      { path: "owners/:id", element: <OwnerProfilePage /> },
       { path: "*", element: <NotFound /> },
     ],
   },
@@ -35,6 +38,7 @@ export const router = createBrowserRouter([
           { index: true, element: <AdminHome /> },
           { path: "seasons", element: <SeasonsListPage /> },
           { path: "seasons/:id", element: <SeasonDetailPage /> },
+          { path: "leagues/:id/mapping", element: <MappingPage /> },
           { path: "owners", element: <OwnersListPage /> },
           { path: "owners/:id", element: <OwnerDetailPage /> },
           {

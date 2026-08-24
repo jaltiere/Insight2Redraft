@@ -39,10 +39,11 @@ export function useUpdateOwner(id: number) {
   });
 }
 
-export function useTeamMappings(leagueId: number) {
+export function useTeamMappings(leagueId: number | null) {
   return useQuery({
     queryKey: ["mappings", leagueId],
     queryFn: () => apiClient.get<TeamMappingRow[]>(`/admin/leagues/${leagueId}/teams`),
+    enabled: leagueId !== null,
   });
 }
 
