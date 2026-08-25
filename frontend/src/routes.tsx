@@ -1,8 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
+import { AccountDetailPage } from "@/pages/admin/AccountDetailPage";
+import { AccountsListPage } from "@/pages/admin/AccountsListPage";
 import { AdminHome } from "@/pages/admin/AdminHome";
-import { AdminSectionStub } from "@/pages/admin/AdminSectionStub";
 import { OwnersListPage } from "@/pages/admin/OwnersListPage";
 import { OwnerDetailPage } from "@/pages/admin/OwnerDetailPage";
 import { MappingPage } from "@/pages/admin/MappingPage";
@@ -43,7 +44,10 @@ export const router = createBrowserRouter([
           { path: "owners/:id", element: <OwnerDetailPage /> },
           {
             element: <ProtectedRoute requireRole="super_admin" />,
-            children: [{ path: "accounts", element: <AdminSectionStub title="Accounts" /> }],
+            children: [
+              { path: "accounts", element: <AccountsListPage /> },
+              { path: "accounts/:id", element: <AccountDetailPage /> },
+            ],
           },
         ],
       },

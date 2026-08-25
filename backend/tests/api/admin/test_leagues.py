@@ -152,3 +152,39 @@ def test_delete_league_cascades_teams(client, admin_headers, db_session, seed):
 def test_delete_unknown_league_404(client, admin_headers):
     resp = client.delete("/admin/leagues/999999", headers=admin_headers)
     assert resp.status_code == 404
+
+
+def _la_headers(make_account):
+    from app.api.security import create_access_token
+    from app.models import AccountRole
+
+    la = make_account("la@example.com", "pw", role=AccountRole.LEAGUE_ADMIN)
+    return {"Authorization": f"Bearer {create_access_token(la.id, la.role)}"}
+
+
+def test_list_leagues_orders_newest_season_first(client, admin_headers, seed):
+    older = seed.season(2023)
+    newer = seed.season(2024)
+    seed.league(newer, name="Redraft Kings")
+    seed.league(newer, name="Dynasty League")
+    seed.league(older, name="Keeper Classic")
+
+    resp = client.get("/admin/leagues", headers=admin_headers)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert [(r["name"], r["season_year"]) for r in body] == [
+        ("Dynasty League", 2024),
+        ("Redraft Kings", 2024),
+        ("Keeper Classic", 2023),
+    ]
+    assert set(body[0]) == {"id", "name", "season_year"}
+
+
+def test_list_leagues_forbidden_for_league_admin(client, make_account):
+    resp = client.get("/admin/leagues", headers=_la_headers(make_account))
+    assert resp.status_code == 403
+
+
+def test_list_leagues_requires_token(client):
+    assert client.get("/admin/leagues").status_code == 401
