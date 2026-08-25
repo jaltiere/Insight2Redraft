@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAccounts, useDeleteAccount } from "@/features/adminAccounts";
+import { useAccounts, useDeleteAccount, useRevokeGrant } from "@/features/adminAccounts";
 import { useOwner } from "@/features/adminOwners";
 import { useAuth } from "@/auth/useAuth";
 import { ownerName } from "@/features/standings";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import { GrantLeagueDialog } from "./GrantLeagueDialog";
 import { ResetPasswordDialog } from "./ResetPasswordDialog";
 
 export function AccountDetailPage() {
@@ -29,6 +30,7 @@ export function AccountDetailPage() {
 
   // hooks must run unconditionally; useOwner no-ops on null
   const owner = useOwner(account?.owner_id ?? null);
+  const revoke = useRevokeGrant(valid ? id : 0);
 
   if (!valid) return <NotFound title="Account not found" message="We couldn't find that account." />;
   if (accounts.isPending) return <p className="text-muted-foreground">Loading…</p>;
@@ -60,6 +62,39 @@ export function AccountDetailPage() {
       <p className="mb-6 text-sm text-muted-foreground">
         Owner: {account.owner_id === null ? "not linked" : owner.data ? ownerName(owner.data) : "…"}
       </p>
+
+      <h2 className="mb-2 text-lg font-semibold">Leagues</h2>
+      {account.role === "super_admin" ? (
+        <p className="mb-6 text-sm text-muted-foreground">
+          Grants apply only to league-admin accounts — a super-admin already has every league.
+        </p>
+      ) : (
+        <div className="mb-6 flex flex-col items-start gap-2">
+          {account.grants.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No leagues granted yet.</p>
+          ) : (
+            <ul aria-label="Granted leagues" className="flex w-full flex-col gap-1">
+              {account.grants.map((g) => (
+                <li
+                  key={g.league_id}
+                  className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2 text-sm"
+                >
+                  <span>{g.league_name}</span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    disabled={revoke.isPending}
+                    onClick={() => revoke.mutate(g.league_id)}
+                  >
+                    Revoke
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <GrantLeagueDialog accountId={account.id} existing={account.grants} />
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <ResetPasswordDialog
