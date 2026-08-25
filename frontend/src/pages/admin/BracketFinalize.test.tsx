@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { BracketAdminPage } from "./BracketAdminPage";
 import { renderWithAuth } from "@/test/renderWithAuth";
 import { server } from "@/test/server";
@@ -115,4 +115,28 @@ test("a finalize success on season 6 closes the dialog with no error, and the re
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(finalizeCalls).toBe(1);
   expect(screen.queryByRole("alert")).toBeNull();
+});
+
+test("canceling the dialog while finalize is in flight still surfaces the error on the page", async () => {
+  // The Finalize action button is disabled while pending, but Cancel/Escape/
+  // backdrop-click are not — closing the dialog unmounts DialogContent (and
+  // its own {error && <p role="alert">…}) before the request settles. The
+  // page-level alert (gated on no dialog being open) is what's left to show
+  // the error once the rejection lands after the dialog is already gone.
+  server.use(
+    http.post("/api/admin/seasons/7/bracket/finalize-round", async () => {
+      await delay(50);
+      return HttpResponse.json({ detail: "Scores are not synced for week 15" }, { status: 409 });
+    }),
+  );
+
+  renderAt();
+  await userEvent.click(await screen.findByRole("button", { name: /finalize round/i }));
+  // Fire the mutation, then cancel before the delayed response lands.
+  await userEvent.click(screen.getByRole("button", { name: /^finalize$/i }));
+  await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(await screen.findByText(/scores are not synced/i)).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toBeInTheDocument();
 });

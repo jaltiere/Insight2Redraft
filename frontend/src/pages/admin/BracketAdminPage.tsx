@@ -147,6 +147,10 @@ export function BracketAdminPage() {
         </>
       )}
 
+      {error && !confirmGenerate && !confirmApprove && !confirmFinalize && (
+        <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>
+      )}
+
       <Dialog
         open={confirmGenerate}
         onOpenChange={(o) => { setConfirmGenerate(o); if (o) setError(null); }}
