@@ -61,9 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccount(me);
   }, []);
 
+  // clearToken() notifies the subscriber above, which nulls the account and
+  // clears the query cache — no need to duplicate that here.
   const logout = useCallback(() => {
     clearToken();
-    setAccount(null);
   }, []);
 
   const value = useMemo(() => ({ account, isLoading, login, logout }), [account, isLoading, login, logout]);
