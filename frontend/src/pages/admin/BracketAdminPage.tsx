@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAdminBracket, useApproveBracket, useGenerateBracket } from "@/features/adminBracket";
+import {
+  useAdminBracket, useApproveBracket, useFinalizeRound, useGenerateBracket,
+} from "@/features/adminBracket";
 import { useSeason } from "@/features/useSeasonDashboard";
 import { groupByRound, roundCount } from "@/features/bracket";
 import { ownerName } from "@/features/standings";
@@ -23,9 +25,11 @@ export function BracketAdminPage() {
   const bracket = useAdminBracket(valid ? id : null);
   const generate = useGenerateBracket(valid ? id : 0);
   const approve = useApproveBracket(valid ? id : 0);
+  const finalize = useFinalizeRound(valid ? id : 0);
 
   const [confirmGenerate, setConfirmGenerate] = useState(false);
   const [confirmApprove, setConfirmApprove] = useState(false);
+  const [confirmFinalize, setConfirmFinalize] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!valid) return <NotFound title="Season not found" message="We couldn't find that season." />;
@@ -58,10 +62,27 @@ export function BracketAdminPage() {
     }
   }
 
+  async function onFinalize() {
+    setError(null);
+    try {
+      await finalize.mutateAsync();
+      setConfirmFinalize(false);
+    } catch (e) {
+      setError(isApiError(e) ? e.detail : "Finalize failed");
+    }
+  }
+
   const isPending = !missing && bracket.data!.status === "pending";
   const roundsNeeded = missing ? 0 : roundCount(bracket.data!.matchups);
   const weeks = season.data?.nfl_playoff_weeks.length ?? 0;
   const tooFewWeeks = isPending && roundsNeeded > weeks;
+  const grouped = missing ? [] : groupByRound(bracket.data!.matchups);
+  const isActive = !missing && bracket.data!.status === "active";
+  const isComplete = !missing && bracket.data!.status === "complete";
+  const nextRound = grouped.find((r) => r.matchups.some((m) => !m.is_finalized)) ?? null;
+  const champion = isComplete
+    ? grouped[grouped.length - 1]?.matchups[0]?.winner_team_id ?? null
+    : null;
 
   return (
     <div>
@@ -111,17 +132,20 @@ export function BracketAdminPage() {
               </tbody>
             </table>
           </div>
-          <BracketRounds rounds={groupByRound(bracket.data!.matchups)} />
+          <BracketRounds rounds={grouped} championTeamId={champion} />
           {isPending && (
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <Button variant="outline" onClick={() => setConfirmGenerate(true)}>Regenerate</Button>
               <Button onClick={() => setConfirmApprove(true)}>Approve bracket</Button>
             </div>
           )}
+          {isActive && nextRound && (
+            <div className="mt-4">
+              <Button onClick={() => setConfirmFinalize(true)}>Finalize round</Button>
+            </div>
+          )}
         </>
       )}
-
-      {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
 
       <Dialog
         open={confirmGenerate}
@@ -166,6 +190,28 @@ export function BracketAdminPage() {
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
             <Button onClick={onApprove} disabled={approve.isPending}>Approve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmFinalize}
+        onOpenChange={(o) => { setConfirmFinalize(o); if (o) setError(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Finalize round {nextRound?.round} · week {nextRound?.nfl_week}?
+            </DialogTitle>
+            <DialogDescription>
+              Locks this round's scores, advances the winners, and creates the next round.
+              This can't be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={onFinalize} disabled={finalize.isPending}>Finalize</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
