@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
+import { AccountDetailPage } from "@/pages/admin/AccountDetailPage";
 import { AccountsListPage } from "@/pages/admin/AccountsListPage";
 import { AdminHome } from "@/pages/admin/AdminHome";
 import { OwnersListPage } from "@/pages/admin/OwnersListPage";
@@ -43,7 +44,10 @@ export const router = createBrowserRouter([
           { path: "owners/:id", element: <OwnerDetailPage /> },
           {
             element: <ProtectedRoute requireRole="super_admin" />,
-            children: [{ path: "accounts", element: <AccountsListPage /> }],
+            children: [
+              { path: "accounts", element: <AccountsListPage /> },
+              { path: "accounts/:id", element: <AccountDetailPage /> },
+            ],
           },
         ],
       },
