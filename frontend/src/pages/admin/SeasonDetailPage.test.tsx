@@ -1,26 +1,18 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithAuth } from "@/test/renderWithAuth";
 import { http, HttpResponse } from "msw";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
 import { SeasonDetailPage } from "./SeasonDetailPage";
-import { AuthProvider } from "@/auth/AuthProvider";
 import { server } from "@/test/server";
 
 afterEach(() => localStorage.clear());
 
 function renderAt(path = "/admin/seasons/1", role = "super_admin") {
-  localStorage.setItem("i2r_token", "tok.123");
   server.use(http.get("/api/auth/me", () => HttpResponse.json({ id: 1, email: "a@i2r", role, owner_id: null })));
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
-        <AuthProvider>
-          <Routes><Route path="/admin/seasons/:id" element={<SeasonDetailPage />} /></Routes>
-        </AuthProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
+  return renderWithAuth(
+    <Routes><Route path="/admin/seasons/:id" element={<SeasonDetailPage />} /></Routes>,
+    { route: path },
   );
 }
 
