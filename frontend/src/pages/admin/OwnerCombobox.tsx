@@ -8,11 +8,12 @@ import { OwnerFormDialog } from "./OwnerFormDialog";
 import type { OwnerAdminResponse } from "@/types/api";
 
 export function OwnerCombobox({
-  sleeperName, onSelect, onCancel,
+  sleeperName, onSelect, onCancel, error,
 }: {
   sleeperName?: string | null;
   onSelect: (owner: OwnerAdminResponse) => void | Promise<void>;
   onCancel: () => void;
+  error?: string | null;
 }) {
   const [text, setText] = useState("");
   const q = useDebounced(text, 250);
@@ -52,6 +53,7 @@ export function OwnerCombobox({
           }
         />
       </div>
+      {error && <span className="text-xs text-destructive">{error}</span>}
       <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
     </div>
   );

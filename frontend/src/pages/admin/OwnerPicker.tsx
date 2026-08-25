@@ -43,13 +43,11 @@ export function OwnerPicker({
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <OwnerCombobox
-        sleeperName={sleeperName}
-        onSelect={(o) => pick(o.id)}
-        onCancel={() => setOpen(false)}
-      />
-      {error && <span className="text-xs text-destructive">{error}</span>}
-    </div>
+    <OwnerCombobox
+      sleeperName={sleeperName}
+      onSelect={(o) => pick(o.id)}
+      onCancel={() => setOpen(false)}
+      error={error}
+    />
   );
 }
