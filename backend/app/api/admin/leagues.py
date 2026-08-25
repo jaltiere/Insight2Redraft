@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.admin.schemas import (
+    LeagueAdminRef,
     LeagueEntryRequest,
     LeagueSetupResponse,
     ScoringDiff,
@@ -61,6 +62,19 @@ async def _run_setup(
         raise HTTPException(status_code=502, detail="Sleeper upstream error")
     db.commit()
     return _build_response(db, result)
+
+
+@router.get("/leagues", response_model=list[LeagueAdminRef])
+def list_leagues(db: Session = Depends(get_db)) -> list[LeagueAdminRef]:
+    rows = db.execute(
+        select(League.id, League.name, Season.year)
+        .join(Season, League.season_id == Season.id)
+        .order_by(Season.year.desc(), League.name)
+    ).all()
+    return [
+        LeagueAdminRef(id=lid, name=name, season_year=year)
+        for lid, name, year in rows
+    ]
 
 
 @router.post(

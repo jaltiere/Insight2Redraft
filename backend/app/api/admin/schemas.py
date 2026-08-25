@@ -53,6 +53,12 @@ class LeagueSetupResponse(BaseModel):
     teams: list[TeamRef]
 
 
+class LeagueAdminRef(BaseModel):
+    id: int
+    name: str
+    season_year: int
+
+
 class OwnerCreate(BaseModel):
     first_name: str
     last_name: str
