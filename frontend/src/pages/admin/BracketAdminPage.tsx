@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAdminBracket, useGenerateBracket } from "@/features/adminBracket";
+import { useAdminBracket, useApproveBracket, useGenerateBracket } from "@/features/adminBracket";
 import { useSeason } from "@/features/useSeasonDashboard";
-import { groupByRound } from "@/features/bracket";
+import { groupByRound, roundCount } from "@/features/bracket";
 import { ownerName } from "@/features/standings";
 import { BracketRounds } from "@/components/BracketRounds";
 import { NotFound } from "@/pages/NotFound";
@@ -22,8 +22,10 @@ export function BracketAdminPage() {
   const season = useSeason(valid ? id : null);
   const bracket = useAdminBracket(valid ? id : null);
   const generate = useGenerateBracket(valid ? id : 0);
+  const approve = useApproveBracket(valid ? id : 0);
 
   const [confirmGenerate, setConfirmGenerate] = useState(false);
+  const [confirmApprove, setConfirmApprove] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!valid) return <NotFound title="Season not found" message="We couldn't find that season." />;
@@ -45,6 +47,21 @@ export function BracketAdminPage() {
       setError(isApiError(e) ? e.detail : "Generate failed");
     }
   }
+
+  async function onApprove() {
+    setError(null);
+    try {
+      await approve.mutateAsync();
+      setConfirmApprove(false);
+    } catch (e) {
+      setError(isApiError(e) ? e.detail : "Approve failed");
+    }
+  }
+
+  const isPending = !missing && bracket.data!.status === "pending";
+  const roundsNeeded = missing ? 0 : roundCount(bracket.data!.matchups);
+  const weeks = season.data?.nfl_playoff_weeks.length ?? 0;
+  const tooFewWeeks = isPending && roundsNeeded > weeks;
 
   return (
     <div>
@@ -95,6 +112,12 @@ export function BracketAdminPage() {
             </table>
           </div>
           <BracketRounds rounds={groupByRound(bracket.data!.matchups)} />
+          {isPending && (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button variant="outline" onClick={() => setConfirmGenerate(true)}>Regenerate</Button>
+              <Button onClick={() => setConfirmApprove(true)}>Approve bracket</Button>
+            </div>
+          )}
         </>
       )}
 
@@ -108,13 +131,41 @@ export function BracketAdminPage() {
           <DialogHeader>
             <DialogTitle>Generate the bracket?</DialogTitle>
             <DialogDescription>
-              Builds the playoff field from current standings. You can review it before approving.
+              {missing
+                ? "Builds the playoff field from current standings. You can review it before approving."
+                : "The existing draft bracket will be discarded and replaced with a new one built from current standings."}
             </DialogDescription>
           </DialogHeader>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
             <Button onClick={onGenerate} disabled={generate.isPending}>Generate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmApprove}
+        onOpenChange={(o) => { setConfirmApprove(o); if (o) setError(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve this bracket?</DialogTitle>
+            <DialogDescription>
+              Approving publishes the bracket publicly and starts the playoffs. This can't be
+              undone — regenerate now if the field looks wrong.
+            </DialogDescription>
+          </DialogHeader>
+          {tooFewWeeks && (
+            <p className="text-sm text-highlight">
+              ⚠ This bracket needs {roundsNeeded} rounds but the season has more rounds than playoff
+              weeks ({weeks} configured). Finalizing the later rounds will fail until you add weeks.
+            </p>
+          )}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={onApprove} disabled={approve.isPending}>Approve</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
