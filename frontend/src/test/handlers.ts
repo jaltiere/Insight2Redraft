@@ -216,4 +216,55 @@ export const handlers = [
       { id: 5, name: "Keeper Classic", season_year: 2023 },
     ]),
   ),
+  // --- admin: bracket (FE-3e) ---
+  ...(() => {
+    const maria = { id: 2, first_name: "Maria", last_name: "Pappas", display_name: null, avatar_url: null };
+    const jack = { id: 1, first_name: "Jack", last_name: "Altiere", display_name: "JackA", avatar_url: null };
+    const refA = { team_id: 31, seed: 1, league_name: "Dynasty League", owner: maria };
+    const refB = { team_id: 32, seed: 2, league_name: "Redraft Kings", owner: jack };
+    const pending = {
+      id: 5, season_id: 1, size: 2, status: "pending",
+      seeds: [
+        { seed: 1, team_id: 31, qualified_via: "auto", league_name: "Dynasty League", owner: maria },
+        { seed: 2, team_id: 32, qualified_via: "wildcard", league_name: "Redraft Kings", owner: jack },
+      ],
+      matchups: [
+        {
+          id: 90, round: 1, nfl_week: 15, team_a: refA, team_b: refB,
+          team_a_score: null, team_b_score: null, winner_team_id: null,
+          is_finalized: false, bye: false,
+        },
+      ],
+    };
+    const active = {
+      ...pending, id: 6, season_id: 7, status: "active",
+      matchups: [
+        {
+          id: 91, round: 1, nfl_week: 15, team_a: refA, team_b: refB,
+          team_a_score: 122.5, team_b_score: 98.25, winner_team_id: 31,
+          is_finalized: true, bye: false,
+        },
+      ],
+    };
+    return [
+      http.get("/api/admin/seasons/:id/bracket", ({ params }) => {
+        if (params.id === "99") return HttpResponse.json({ detail: "Bracket not found" }, { status: 404 });
+        if (params.id === "7") return HttpResponse.json(active);
+        return HttpResponse.json(pending);
+      }),
+      http.post("/api/admin/seasons/:id/bracket", ({ params }) => {
+        if (params.id === "8") {
+          return HttpResponse.json({ detail: "Season is not in playoffs" }, { status: 409 });
+        }
+        return HttpResponse.json(pending, { status: 201 });
+      }),
+      http.post("/api/admin/seasons/:id/bracket/approve", () => HttpResponse.json({ ...pending, status: "active" })),
+      http.post("/api/admin/seasons/:id/bracket/finalize-round", ({ params }) => {
+        if (params.id === "7") {
+          return HttpResponse.json({ detail: "Scores are not synced for week 15" }, { status: 409 });
+        }
+        return HttpResponse.json(active);
+      }),
+    ];
+  })(),
 ];
