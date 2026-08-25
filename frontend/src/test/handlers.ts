@@ -241,14 +241,30 @@ export const handlers = [
       matchups: [
         {
           id: 91, round: 1, nfl_week: 15, team_a: refA, team_b: refB,
+          team_a_score: 122.5, team_b_score: 98.25, winner_team_id: null,
+          is_finalized: false, bye: false,
+        },
+      ],
+    };
+    const activeFinalized = {
+      ...pending, id: 7, season_id: 6, status: "active",
+      matchups: [
+        {
+          id: 92, round: 1, nfl_week: 15, team_a: refA, team_b: refB,
           team_a_score: 122.5, team_b_score: 98.25, winner_team_id: 31,
           is_finalized: true, bye: false,
+        },
+        {
+          id: 93, round: 2, nfl_week: 16, team_a: refA, team_b: null,
+          team_a_score: null, team_b_score: null, winner_team_id: null,
+          is_finalized: false, bye: false,
         },
       ],
     };
     return [
       http.get("/api/admin/seasons/:id/bracket", ({ params }) => {
         if (params.id === "99") return HttpResponse.json({ detail: "Bracket not found" }, { status: 404 });
+        if (params.id === "6") return HttpResponse.json(active);
         if (params.id === "7") return HttpResponse.json(active);
         return HttpResponse.json(pending);
       }),
@@ -262,6 +278,9 @@ export const handlers = [
       http.post("/api/admin/seasons/:id/bracket/finalize-round", ({ params }) => {
         if (params.id === "7") {
           return HttpResponse.json({ detail: "Scores are not synced for week 15" }, { status: 409 });
+        }
+        if (params.id === "6") {
+          return HttpResponse.json(activeFinalized);
         }
         return HttpResponse.json(active);
       }),

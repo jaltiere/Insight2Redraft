@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { expect, test } from "vitest";
+import { isApiError } from "@/lib/api-client";
 import { useAdminBracket } from "./adminBracket";
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -21,6 +22,7 @@ test("useAdminBracket returns a pending bracket with resolved teams", async () =
 test("useAdminBracket surfaces a 404 as an error the page can branch on", async () => {
   const { result } = renderHook(() => useAdminBracket(99), { wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
+  expect(isApiError(result.current.error) && result.current.error.status === 404).toBe(true);
 });
 
 test("useAdminBracket stays idle for a null season", () => {
