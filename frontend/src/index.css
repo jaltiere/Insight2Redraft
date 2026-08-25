@@ -18,6 +18,8 @@
     --color-sidebar: var(--sidebar);
     --color-admin-rail: var(--admin-rail);
     --color-admin-rail-foreground: var(--admin-rail-foreground);
+    --color-admin-rail-hover: var(--admin-rail-hover);
+    --color-admin-rail-border: var(--admin-rail-border);
     --color-chart-5: var(--chart-5);
     --color-chart-4: var(--chart-4);
     --color-chart-3: var(--chart-3);
@@ -89,6 +91,8 @@
     --sidebar-ring: #2563eb;
     --admin-rail: oklch(0.208 0.042 265.75);
     --admin-rail-foreground: oklch(0.984 0.003 247.86);
+    --admin-rail-hover: oklch(1 0 0 / 10%);
+    --admin-rail-border: oklch(1 0 0 / 10%);
 }
 
 .dark {
@@ -127,6 +131,8 @@
     --sidebar-ring: #3b82f6;
     --admin-rail: oklch(0.208 0.042 265.75);
     --admin-rail-foreground: oklch(0.984 0.003 247.86);
+    --admin-rail-hover: oklch(1 0 0 / 10%);
+    --admin-rail-border: oklch(1 0 0 / 10%);
 }
 
 @layer base {

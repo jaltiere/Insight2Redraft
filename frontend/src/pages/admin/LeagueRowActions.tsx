@@ -14,7 +14,7 @@ export function LeagueRowActions({
 }: {
   seasonId: number; leagueId: number; leagueName: string; canManage: boolean; canSync: boolean;
 }) {
-  const sync = useSyncLeague();
+  const sync = useSyncLeague(seasonId);
   const del = useDeleteLeague(seasonId);
   const [syncResult, setSyncResult] = useState<SyncNowResponse | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);

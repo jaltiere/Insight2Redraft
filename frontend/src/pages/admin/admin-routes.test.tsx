@@ -1,11 +1,10 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithAuth } from "@/test/renderWithAuth";
 import { http, HttpResponse } from "msw";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
 import { AdminHome } from "./AdminHome";
 import { AdminSectionStub } from "./AdminSectionStub";
-import { AuthProvider } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { server } from "@/test/server";
@@ -13,24 +12,17 @@ import { server } from "@/test/server";
 afterEach(() => localStorage.clear());
 
 function renderAdmin(initial: string) {
-  localStorage.setItem("i2r_token", "tok.123");
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[initial]}>
-        <AuthProvider>
-          <Routes>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminHome />} />
-              <Route path="owners" element={<AdminSectionStub title="Owners" />} />
-              <Route element={<ProtectedRoute requireRole="super_admin" />}>
-                <Route path="accounts" element={<AdminSectionStub title="Accounts" />} />
-              </Route>
-            </Route>
-          </Routes>
-        </AuthProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
+  return renderWithAuth(
+    <Routes>
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminHome />} />
+        <Route path="owners" element={<AdminSectionStub title="Owners" />} />
+        <Route element={<ProtectedRoute requireRole="super_admin" />}>
+          <Route path="accounts" element={<AdminSectionStub title="Accounts" />} />
+        </Route>
+      </Route>
+    </Routes>,
+    { route: initial },
   );
 }
 

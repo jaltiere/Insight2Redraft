@@ -1,26 +1,14 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithAuth } from "@/test/renderWithAuth";
 import { http, HttpResponse } from "msw";
-import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
 import { AdminHome } from "./AdminHome";
-import { AuthProvider } from "@/auth/AuthProvider";
 import { server } from "@/test/server";
 
 afterEach(() => localStorage.clear());
 
 function renderHome() {
-  localStorage.setItem("i2r_token", "tok.123");
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        <AuthProvider>
-          <AdminHome />
-        </AuthProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+  return renderWithAuth(<AdminHome />);
 }
 
 test("super-admin hub shows the Accounts card", async () => {

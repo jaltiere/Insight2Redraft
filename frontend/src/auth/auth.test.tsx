@@ -4,7 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
+import { http, HttpResponse } from "msw";
+import { useQuery } from "@tanstack/react-query";
+import { server } from "@/test/server";
+import { renderWithAuth } from "@/test/renderWithAuth";
+import { apiClient } from "@/lib/api-client";
+import { queryClient as sharedQueryClient } from "@/lib/queryClient";
 import { AuthProvider } from "./AuthProvider";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { useAuth } from "./useAuth";
@@ -109,4 +115,55 @@ test("after login the user returns to the originally requested admin route", asy
   await userEvent.type(screen.getByLabelText(/password/i), "pw");
   await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
   expect(await screen.findByText("Owners stub")).toBeInTheDocument();
+});
+
+test("a real 401 response (not a manual clearToken) redirects to /login and clears the cache", async () => {
+  const clearSpy = vi.spyOn(sharedQueryClient, "clear");
+  server.use(http.get("/api/admin/seasons", () => HttpResponse.json({ detail: "Token expired" }, { status: 401 })));
+
+  function Probe() {
+    const q = useQuery({
+      queryKey: ["probe"],
+      queryFn: () => apiClient.get<unknown>("/admin/seasons"),
+      retry: false,
+    });
+    return <div>{q.isError ? "probe failed" : "probe ok"}</div>;
+  }
+  function AppRoutes() {
+    return (
+      <Routes>
+        <Route path="/login" element={<div>Login screen</div>} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/admin" element={<Probe />} />
+        </Route>
+      </Routes>
+    );
+  }
+
+  renderWithAuth(<AppRoutes />, { route: "/admin" });
+  // the 401 from the probe fetch clears the token, which drops the account
+  expect(await screen.findByText("Login screen")).toBeInTheDocument();
+  expect(localStorage.getItem("i2r_token")).toBeNull();
+  expect(clearSpy).toHaveBeenCalled();
+  clearSpy.mockRestore();
+});
+
+test("logout clears the token and the query cache", async () => {
+  const clearSpy = vi.spyOn(sharedQueryClient, "clear");
+  function Probe() {
+    const { isAuthenticated, logout } = useAuth();
+    return (
+      <div>
+        <span>{isAuthenticated ? "in" : "out"}</span>
+        <button onClick={logout}>sign out</button>
+      </div>
+    );
+  }
+  renderWithAuth(<Probe />);
+  expect(await screen.findByText("in")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "sign out" }));
+  await waitFor(() => expect(screen.getByText("out")).toBeInTheDocument());
+  expect(localStorage.getItem("i2r_token")).toBeNull();
+  expect(clearSpy).toHaveBeenCalled();
+  clearSpy.mockRestore();
 });

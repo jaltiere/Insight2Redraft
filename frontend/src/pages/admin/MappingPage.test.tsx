@@ -1,24 +1,16 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithAuth } from "@/test/renderWithAuth";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
 import { MappingPage } from "./MappingPage";
-import { AuthProvider } from "@/auth/AuthProvider";
 
 afterEach(() => localStorage.clear());
 
 function renderAt(path = "/admin/leagues/9/mapping") {
-  localStorage.setItem("i2r_token", "tok.123");
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
-        <AuthProvider>
-          <Routes><Route path="/admin/leagues/:id/mapping" element={<MappingPage />} /></Routes>
-        </AuthProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
+  return renderWithAuth(
+    <Routes><Route path="/admin/leagues/:id/mapping" element={<MappingPage />} /></Routes>,
+    { route: path },
   );
 }
 
