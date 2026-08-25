@@ -42,6 +42,24 @@ test("granting a league closes the dialog", async () => {
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 });
 
+test("revoking a grant issues the delete request and surfaces no error", async () => {
+  let revoked = false;
+  server.use(
+    http.delete("/api/admin/accounts/:id/grants/:leagueId", ({ params }) => {
+      revoked = true;
+      expect(params.id).toBe("2");
+      expect(params.leagueId).toBe("3");
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+  renderAt();
+  const grants = await screen.findByRole("list", { name: /granted leagues/i });
+  await userEvent.click(within(grants).getByRole("button", { name: /revoke/i }));
+
+  await waitFor(() => expect(revoked).toBe(true));
+  expect(screen.queryByRole("alert")).toBeNull();
+});
+
 test("a failed revoke shows the error message inline", async () => {
   server.use(
     http.delete("/api/admin/accounts/:id/grants/:leagueId", () =>
