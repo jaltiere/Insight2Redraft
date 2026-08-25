@@ -47,9 +47,14 @@ export function useResyncLeague(seasonId: number) {
   });
 }
 
-export function useSyncLeague() {
+export function useSyncLeague(seasonId: number) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (leagueId: number) => apiClient.post<SyncNowResponse>(`/admin/leagues/${leagueId}/sync`),
+    onSuccess: (_res, leagueId) => {
+      qc.invalidateQueries({ queryKey: ["season", seasonId] });
+      qc.invalidateQueries({ queryKey: ["league", leagueId] });
+    },
   });
 }
 
