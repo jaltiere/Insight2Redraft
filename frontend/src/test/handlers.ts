@@ -162,4 +162,58 @@ export const handlers = [
       best_weekly: [{ season_year: 2024, league_name: "Dynasty League", week: 5, points: 155.2 }],
     });
   }),
+  // --- admin: accounts & grants (FE-3d) ---
+  http.get("/api/admin/accounts", () =>
+    HttpResponse.json([
+      { id: 1, email: "admin@example.com", role: "super_admin", owner_id: null, grants: [] },
+      {
+        id: 2, email: "maria@ex.com", role: "league_admin", owner_id: 2,
+        grants: [{ league_id: 3, league_name: "Dynasty League" }],
+      },
+      { id: 3, email: "sam@ex.com", role: "league_admin", owner_id: null, grants: [] },
+    ]),
+  ),
+  http.post("/api/admin/accounts", async ({ request }) => {
+    const b = (await request.json()) as { email: string; owner_id: number | null };
+    if (b.email === "dupe@ex.com") {
+      return HttpResponse.json({ detail: "Account email already exists" }, { status: 409 });
+    }
+    if (b.owner_id === 999) {
+      return HttpResponse.json({ detail: "Owner does not exist" }, { status: 422 });
+    }
+    return HttpResponse.json(
+      { id: 9, email: b.email, role: "league_admin", owner_id: b.owner_id, grants: [] },
+      { status: 201 },
+    );
+  }),
+  http.patch("/api/admin/accounts/:id", ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id), email: "maria@ex.com", role: "league_admin",
+      owner_id: 2, grants: [{ league_id: 3, league_name: "Dynasty League" }],
+    }),
+  ),
+  http.delete("/api/admin/accounts/:id", ({ params }) => {
+    if (params.id === "1") {
+      return HttpResponse.json({ detail: "Cannot delete the last super admin" }, { status: 409 });
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
+  http.post("/api/admin/accounts/:id/grants", async ({ request }) => {
+    const b = (await request.json()) as { league_id: number };
+    if (b.league_id === 3) {
+      return HttpResponse.json({ detail: "Grant already exists" }, { status: 409 });
+    }
+    return HttpResponse.json(
+      { league_id: b.league_id, league_name: "Redraft Kings" },
+      { status: 201 },
+    );
+  }),
+  http.delete("/api/admin/accounts/:id/grants/:leagueId", () => new HttpResponse(null, { status: 204 })),
+  http.get("/api/admin/leagues", () =>
+    HttpResponse.json([
+      { id: 3, name: "Dynasty League", season_year: 2024 },
+      { id: 4, name: "Redraft Kings", season_year: 2024 },
+      { id: 5, name: "Keeper Classic", season_year: 2023 },
+    ]),
+  ),
 ];

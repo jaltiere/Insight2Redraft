@@ -200,3 +200,28 @@ export interface OwnerProfile {
   season_records: OwnerSeasonRecord[];
   best_weekly: BestWeeklyEntry[];
 }
+
+export interface LeagueGrantRef {
+  league_id: number;
+  league_name: string;
+}
+
+export interface AccountAdminResponse {
+  id: number;
+  email: string;
+  role: AccountRole;
+  owner_id: number | null;
+  grants: LeagueGrantRef[];
+}
+
+export interface AccountCreateBody {
+  email: string;
+  password: string;
+  owner_id: number | null;
+}
+
+export interface LeagueAdminRef {
+  id: number;
+  name: string;
+  season_year: number;
+}
