@@ -1,0 +1,123 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAdminBracket, useGenerateBracket } from "@/features/adminBracket";
+import { useSeason } from "@/features/useSeasonDashboard";
+import { groupByRound } from "@/features/bracket";
+import { ownerName } from "@/features/standings";
+import { BracketRounds } from "@/components/BracketRounds";
+import { NotFound } from "@/pages/NotFound";
+import { isApiError } from "@/lib/api-client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+
+export function BracketAdminPage() {
+  const raw = useParams().id;
+  const id = Number(raw);
+  const valid = raw !== undefined && raw !== "" && !Number.isNaN(id);
+  const navigate = useNavigate();
+
+  const season = useSeason(valid ? id : null);
+  const bracket = useAdminBracket(valid ? id : null);
+  const generate = useGenerateBracket(valid ? id : 0);
+
+  const [confirmGenerate, setConfirmGenerate] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!valid) return <NotFound title="Season not found" message="We couldn't find that season." />;
+  if (bracket.isPending || season.isPending) return <p className="text-muted-foreground">Loading…</p>;
+
+  const missing = bracket.isError && isApiError(bracket.error) && bracket.error.status === 404;
+  if (bracket.isError && !missing) {
+    return <p className="text-destructive">Couldn't load the bracket.</p>;
+  }
+
+  const inPlayoffs = season.data?.status === "playoffs";
+
+  async function onGenerate() {
+    setError(null);
+    try {
+      await generate.mutateAsync();
+      setConfirmGenerate(false);
+    } catch (e) {
+      setError(isApiError(e) ? e.detail : "Generate failed");
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-1">
+        <Button variant="link" size="sm" className="px-0" onClick={() => navigate(-1)}>← Back</Button>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">
+          Bracket{season.data ? ` · ${season.data.year}` : ""}
+        </h1>
+        {!missing && <Badge variant="secondary">{bracket.data!.status}</Badge>}
+      </div>
+
+      {missing ? (
+        <div className="flex flex-col items-start gap-3 rounded-xl border bg-card p-6">
+          <p className="font-medium">No bracket yet.</p>
+          {!inPlayoffs && (
+            <p className="text-sm text-muted-foreground">
+              The season must be in playoffs before a bracket can be generated.
+            </p>
+          )}
+          <Button disabled={!inPlayoffs} onClick={() => setConfirmGenerate(true)}>
+            Generate bracket
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="mb-6 overflow-x-auto rounded-xl border bg-card shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="px-4 py-2 font-medium">Seed</th>
+                  <th className="px-4 py-2 font-medium">Owner</th>
+                  <th className="px-4 py-2 font-medium">League</th>
+                  <th className="px-4 py-2 font-medium">Qualified via</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bracket.data!.seeds.map((s) => (
+                  <tr key={s.team_id} className="border-t">
+                    <td className="px-4 py-2 tabular-nums">{s.seed}</td>
+                    <td className="px-4 py-2 font-medium">{ownerName(s.owner)}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{s.league_name}</td>
+                    <td className="px-4 py-2">{s.qualified_via}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <BracketRounds rounds={groupByRound(bracket.data!.matchups)} />
+        </>
+      )}
+
+      {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+
+      <Dialog
+        open={confirmGenerate}
+        onOpenChange={(o) => { setConfirmGenerate(o); if (o) setError(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate the bracket?</DialogTitle>
+            <DialogDescription>
+              Builds the playoff field from current standings. You can review it before approving.
+            </DialogDescription>
+          </DialogHeader>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={onGenerate} disabled={generate.isPending}>Generate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
