@@ -26,3 +26,16 @@ export function groupByRound(matchups: BracketMatchupAdmin[]): BracketRound[] {
 export function roundCount(matchups: BracketMatchupAdmin[]): number {
   return matchups.reduce((max, m) => (m.round > max ? m.round : max), 0);
 }
+
+/**
+ * Rounds a single-elimination bracket needs to reach a champion, given its
+ * field size. The backend pads a non-power-of-two field with byes (e.g. size
+ * 6 pads to 8), so this is `ceil(log2(size))`, not derived from whatever
+ * rounds happen to already exist — `generate_bracket` only ever creates round
+ * 1 up front; later rounds appear as earlier ones finalize. Sizes of 0 or 1
+ * need no rounds.
+ */
+export function roundsForSize(size: number): number {
+  if (size <= 1) return 0;
+  return Math.ceil(Math.log2(size));
+}

@@ -4,7 +4,7 @@ import {
   useAdminBracket, useApproveBracket, useFinalizeRound, useGenerateBracket,
 } from "@/features/adminBracket";
 import { useSeason } from "@/features/useSeasonDashboard";
-import { groupByRound, roundCount } from "@/features/bracket";
+import { groupByRound, roundsForSize } from "@/features/bracket";
 import { ownerName } from "@/features/standings";
 import { BracketRounds } from "@/components/BracketRounds";
 import { NotFound } from "@/pages/NotFound";
@@ -73,7 +73,7 @@ export function BracketAdminPage() {
   }
 
   const isPending = !missing && bracket.data!.status === "pending";
-  const roundsNeeded = missing ? 0 : roundCount(bracket.data!.matchups);
+  const roundsNeeded = missing ? 0 : roundsForSize(bracket.data!.size);
   const weeks = season.data?.nfl_playoff_weeks.length ?? 0;
   const tooFewWeeks = isPending && roundsNeeded > weeks;
   const grouped = missing ? [] : groupByRound(bracket.data!.matchups);

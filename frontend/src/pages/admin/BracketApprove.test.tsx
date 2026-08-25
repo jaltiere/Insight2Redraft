@@ -28,6 +28,18 @@ function seasonWithWeeks(weeks: number[]) {
   );
 }
 
+/** Season 1's pending bracket, but with a real field size (rounds = ceil(log2(size))). */
+function bracketWithSize(size: number) {
+  server.use(
+    http.get("/api/admin/seasons/1/bracket", () =>
+      HttpResponse.json({
+        id: 5, season_id: 1, size, status: "pending",
+        seeds: [], matchups: [],
+      }),
+    ),
+  );
+}
+
 test("a pending bracket offers Approve and Regenerate", async () => {
   seasonWithWeeks([15, 16, 17]);
   renderAt();
@@ -43,14 +55,18 @@ test("approving warns that it cannot be undone", async () => {
 });
 
 test("no warning when the season has enough playoff weeks", async () => {
-  seasonWithWeeks([15]); // 1 week, bracket has 1 round → rounds do NOT exceed weeks
+  // size 8 needs 3 rounds; 3 configured weeks covers it → no warning
+  seasonWithWeeks([15, 16, 17]);
+  bracketWithSize(8);
   renderAt();
   await userEvent.click(await screen.findByRole("button", { name: /approve bracket/i }));
   expect(screen.queryByText(/more rounds than/i)).toBeNull();
 });
 
 test("warns when rounds exceed available weeks", async () => {
-  seasonWithWeeks([]); // 0 weeks, bracket has 1 round → warning
+  // size 8 needs 3 rounds; only 1 configured week → warning
+  seasonWithWeeks([15]);
+  bracketWithSize(8);
   renderAt();
   await userEvent.click(await screen.findByRole("button", { name: /approve bracket/i }));
   expect(await screen.findByText(/more rounds than/i)).toBeInTheDocument();

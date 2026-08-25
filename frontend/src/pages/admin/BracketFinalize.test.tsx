@@ -70,12 +70,13 @@ test("a complete bracket marks the champion and offers no actions", async () => 
 
 test("a finalize success on season 6 closes the dialog with no error, and the request actually fired", async () => {
   // season 6's GET returns an active bracket with round 1 unfinalized (fixture
-  // `active6`); its finalize-round handler succeeds (fixture `activeFinalized`),
-  // returning round 1 finalized (winner_team_id: 31) plus a round-2 matchup
-  // (id: 92, round 2, week 16, team_a the round-1 winner, team_b null). Wrap the
-  // handler to count invocations so the assertion can't pass merely because the
-  // button was inert — it requires the mutation to have actually gone out over
-  // the network and resolved successfully.
+  // `active6`); its finalize-round handler succeeds, returning a size-4 bracket
+  // whose two round-1 matchups are both finalized and have fed a real round-2
+  // matchup with both teams present — the only round-2 shape a size-2 field
+  // (which is finished, not advanced, once its single matchup finalizes) could
+  // never actually produce. Wrap the handler to count invocations so the
+  // assertion can't pass merely because the button was inert — it requires the
+  // mutation to have actually gone out over the network and resolved successfully.
   let finalizeCalls = 0;
   server.use(
     // Scoped to season 6's concrete path (not the :id wildcard) so a request
@@ -84,13 +85,18 @@ test("a finalize success on season 6 closes the dialog with no error, and the re
     http.post("/api/admin/seasons/6/bracket/finalize-round", () => {
       finalizeCalls += 1;
       const maria = { id: 2, first_name: "Maria", last_name: "Pappas", display_name: null, avatar_url: null };
+      const jack = { id: 1, first_name: "Jack", last_name: "Altiere", display_name: "JackA", avatar_url: null };
       const refA = { team_id: 31, seed: 1, league_name: "Dynasty League", owner: maria };
-      const refB = { team_id: 32, seed: 2, league_name: "Redraft Kings", owner: null };
+      const refB = { team_id: 32, seed: 4, league_name: "Redraft Kings", owner: jack };
+      const refC = { team_id: 33, seed: 2, league_name: "Keeper Classic", owner: null };
+      const refD = { team_id: 34, seed: 3, league_name: "Dynasty League", owner: maria };
       return HttpResponse.json({
-        id: 7, season_id: 6, size: 2, status: "active",
+        id: 7, season_id: 6, size: 4, status: "active",
         seeds: [
           { seed: 1, team_id: 31, qualified_via: "auto", league_name: "Dynasty League", owner: maria },
-          { seed: 2, team_id: 32, qualified_via: "wildcard", league_name: "Redraft Kings", owner: null },
+          { seed: 2, team_id: 33, qualified_via: "auto", league_name: "Keeper Classic", owner: null },
+          { seed: 3, team_id: 34, qualified_via: "wildcard", league_name: "Dynasty League", owner: maria },
+          { seed: 4, team_id: 32, qualified_via: "wildcard", league_name: "Redraft Kings", owner: jack },
         ],
         matchups: [
           {
@@ -99,7 +105,12 @@ test("a finalize success on season 6 closes the dialog with no error, and the re
             is_finalized: true, bye: false,
           },
           {
-            id: 92, round: 2, nfl_week: 16, team_a: refA, team_b: null,
+            id: 92, round: 1, nfl_week: 15, team_a: refC, team_b: refD,
+            team_a_score: 110, team_b_score: 95, winner_team_id: 33,
+            is_finalized: true, bye: false,
+          },
+          {
+            id: 93, round: 2, nfl_week: 16, team_a: refA, team_b: refC,
             team_a_score: null, team_b_score: null, winner_team_id: null,
             is_finalized: false, bye: false,
           },

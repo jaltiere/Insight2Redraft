@@ -246,21 +246,6 @@ export const handlers = [
         },
       ],
     };
-    const activeFinalized = {
-      ...pending, id: 7, season_id: 6, status: "active",
-      matchups: [
-        {
-          id: 91, round: 1, nfl_week: 15, team_a: refA, team_b: refB,
-          team_a_score: 122.5, team_b_score: 98.25, winner_team_id: 31,
-          is_finalized: true, bye: false,
-        },
-        {
-          id: 92, round: 2, nfl_week: 16, team_a: refA, team_b: null,
-          team_a_score: null, team_b_score: null, winner_team_id: null,
-          is_finalized: false, bye: false,
-        },
-      ],
-    };
     const active7 = {
       ...pending, id: 8, season_id: 7, status: "active",
       matchups: [
@@ -289,9 +274,9 @@ export const handlers = [
         if (params.id === "7") {
           return HttpResponse.json({ detail: "Scores are not synced for week 15" }, { status: 409 });
         }
-        if (params.id === "6") {
-          return HttpResponse.json(activeFinalized);
-        }
+        // Season 6's finalize success path is exercised by BracketFinalize.test.tsx
+        // via a concrete server.use() override, which always wins over this
+        // wildcard handler — so no season-6 fixture is needed here.
         return HttpResponse.json(active7);
       }),
     ];
