@@ -1,9 +1,11 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 import { Route, Routes } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
 import { AccountDetailPage } from "./AccountDetailPage";
 import { renderWithAuth } from "@/test/renderWithAuth";
+import { server } from "@/test/server";
 
 afterEach(() => localStorage.clear());
 
@@ -38,6 +40,18 @@ test("granting a league closes the dialog", async () => {
   await userEvent.click(await screen.findByRole("button", { name: /grant league/i }));
   await userEvent.click(await screen.findByRole("button", { name: /Redraft Kings/ }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+test("a failed revoke shows the error message inline", async () => {
+  server.use(
+    http.delete("/api/admin/accounts/:id/grants/:leagueId", () =>
+      HttpResponse.json({ detail: "Grant not found" }, { status: 404 }),
+    ),
+  );
+  renderAt();
+  const grants = await screen.findByRole("list", { name: /granted leagues/i });
+  await userEvent.click(within(grants).getByRole("button", { name: /revoke/i }));
+  expect(await screen.findByText(/grant not found/i)).toBeInTheDocument();
 });
 
 test("a super-admin account shows no grants block", async () => {

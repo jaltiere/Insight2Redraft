@@ -31,6 +31,7 @@ export function AccountDetailPage() {
   // hooks must run unconditionally; useOwner no-ops on null
   const owner = useOwner(account?.owner_id ?? null);
   const revoke = useRevokeGrant(valid ? id : 0);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
 
   if (!valid) return <NotFound title="Account not found" message="We couldn't find that account." />;
   if (accounts.isPending) return <p className="text-muted-foreground">Loading…</p>;
@@ -47,6 +48,15 @@ export function AccountDetailPage() {
       navigate("/admin/accounts");
     } catch (e) {
       setDeleteError(isApiError(e) ? e.detail : "Delete failed");
+    }
+  }
+
+  async function onRevoke(leagueId: number) {
+    setRevokeError(null);
+    try {
+      await revoke.mutateAsync(leagueId);
+    } catch (e) {
+      setRevokeError(isApiError(e) ? e.detail : "Revoke failed");
     }
   }
 
@@ -84,7 +94,7 @@ export function AccountDetailPage() {
                     variant="link"
                     size="sm"
                     disabled={revoke.isPending}
-                    onClick={() => revoke.mutate(g.league_id)}
+                    onClick={() => onRevoke(g.league_id)}
                   >
                     Revoke
                   </Button>
@@ -92,6 +102,7 @@ export function AccountDetailPage() {
               ))}
             </ul>
           )}
+          {revokeError && <p role="alert" className="text-sm text-destructive">{revokeError}</p>}
           <GrantLeagueDialog accountId={account.id} existing={account.grants} />
         </div>
       )}
