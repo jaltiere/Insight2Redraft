@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useAddLeague, useResyncLeague } from "@/features/adminSeasons";
 import { isApiError } from "@/lib/api-client";
@@ -24,18 +24,27 @@ export function LeagueSetupDialog(props: Props) {
   const resync = useResyncLeague(props.seasonId);
   const pending = add.isPending || resync.isPending;
 
+  // Bumped on every open/close. A run captures the generation it started in, so
+  // a request that resolves after the dialog was closed (or reopened) is dropped
+  // instead of writing its result into the fresh dialog.
+  const generation = useRef(0);
+
   function reset() {
+    generation.current += 1;
     setSleeperId(""); setResult(null); setError(null);
   }
 
   async function run() {
+    const started = generation.current;
     setError(null);
     try {
       const res = props.mode === "add"
         ? await add.mutateAsync(sleeperId)
         : await resync.mutateAsync(props.leagueId);
+      if (generation.current !== started) return;
       setResult(res);
     } catch (e) {
+      if (generation.current !== started) return;
       setError(isApiError(e) ? e.detail : "Setup failed");
     }
   }
