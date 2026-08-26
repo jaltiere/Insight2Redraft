@@ -121,6 +121,71 @@ only `insight2redraft_test`. See `docs/local-dev.md` for creating both.
 
 ---
 
+## Architecture
+
+Three moving parts talk to one Postgres database. Sleeper is the only external
+dependency, and it is **read-only** — nothing is ever written back to it.
+
+```mermaid
+flowchart TB
+    Browser["Browser<br/>public site + admin area"]
+
+    subgraph FE["frontend/ — Vite + React 19 : 5173"]
+        Router["React Router v7<br/>public routes + role-gated /admin"]
+        Query["TanStack Query<br/>cache + invalidation"]
+    end
+
+    subgraph BE["backend/ — FastAPI : 8000"]
+        Public["api/ public routes<br/>seasons, leagues, teams, owners, bracket"]
+        Admin["api/admin/ routes<br/>JWT + require_super_admin / require_league_admin"]
+        Sync["sync/<br/>rosters, weekly scores, ruleset validation"]
+        Scoring["scoring/<br/>recompute points from stat lines"]
+        Bracket["bracket/<br/>engine, generation, finalization"]
+        History["history/<br/>owner season records, best weekly"]
+    end
+
+    Worker["worker/ — separate process<br/>polls NFL state, syncs the active season,<br/>updates live bracket scores"]
+    DB[("PostgreSQL")]
+    Sleeper{{"Sleeper API<br/>api.sleeper.app/v1 — read-only"}}
+
+    Browser --> Router
+    Router --> Query
+    Query -->|"/api/* — proxied in dev"| Public
+    Query -->|"/api/admin/* + bearer token"| Admin
+
+    Public --> History
+    Admin --> Sync
+    Admin --> Bracket
+    Sync --> Scoring
+
+    Public --> DB
+    Admin --> DB
+    Worker --> DB
+    Worker --> Sync
+    Worker --> Bracket
+
+    Sync --> Sleeper
+    Worker --> Sleeper
+```
+
+**Why the worker is separate:** the API serves requests, the worker owns the clock. It
+polls Sleeper for the current NFL week, and if a season for that year exists and is not
+idle, it syncs that season's leagues and refreshes live bracket scores. Nothing in the
+request path waits on Sleeper, so the site stays responsive when Sleeper is slow — and
+the app is fully browsable with the worker stopped, just with static data.
+
+**Where the interesting logic lives:**
+
+| Module | Responsibility |
+|---|---|
+| `backend/app/sync/` | Pull rosters and weekly scores from Sleeper; validate a league's scoring settings against the season ruleset |
+| `backend/app/scoring/` | Recompute points from raw stat lines, so a league's scores can be checked rather than trusted |
+| `backend/app/bracket/` | `engine` seeds and pairs, `generation` builds the field, `finalization` settles a round and advances winners |
+| `backend/app/history/` | Cross-season aggregates behind owner profiles |
+| `backend/app/api/admin/` | Every write path; all of it role-gated |
+| `frontend/src/features/` | Query/mutation hooks, one module per admin area |
+| `frontend/src/pages/admin/` | The admin screens |
+
 ## Layout
 
 ```
