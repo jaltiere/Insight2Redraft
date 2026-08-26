@@ -4,6 +4,7 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import { AccountDetailPage } from "@/pages/admin/AccountDetailPage";
 import { AccountsListPage } from "@/pages/admin/AccountsListPage";
 import { AdminHome } from "@/pages/admin/AdminHome";
+import { BracketAdminPage } from "@/pages/admin/BracketAdminPage";
 import { OwnersListPage } from "@/pages/admin/OwnersListPage";
 import { OwnerDetailPage } from "@/pages/admin/OwnerDetailPage";
 import { MappingPage } from "@/pages/admin/MappingPage";
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
             children: [
               { path: "accounts", element: <AccountsListPage /> },
               { path: "accounts/:id", element: <AccountDetailPage /> },
+              { path: "seasons/:id/bracket", element: <BracketAdminPage /> },
             ],
           },
         ],

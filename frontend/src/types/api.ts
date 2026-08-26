@@ -225,3 +225,43 @@ export interface LeagueAdminRef {
   name: string;
   season_year: number;
 }
+
+export type BracketStatus = "pending" | "active" | "complete";
+export type QualifiedVia = "auto" | "wildcard";
+
+export interface BracketTeamRef {
+  team_id: number;
+  seed: number;
+  league_name: string;
+  owner: OwnerRef | null;
+}
+
+export interface BracketSeedAdmin {
+  seed: number;
+  team_id: number;
+  qualified_via: QualifiedVia;
+  league_name: string;
+  owner: OwnerRef | null;
+}
+
+export interface BracketMatchupAdmin {
+  id: number;
+  round: number;
+  nfl_week: number;
+  team_a: BracketTeamRef | null;
+  team_b: BracketTeamRef | null;
+  team_a_score: number | null;
+  team_b_score: number | null;
+  winner_team_id: number | null;
+  is_finalized: boolean;
+  bye: boolean;
+}
+
+export interface BracketAdminResponse {
+  id: number;
+  season_id: number;
+  size: number;
+  status: BracketStatus;
+  seeds: BracketSeedAdmin[];
+  matchups: BracketMatchupAdmin[];
+}

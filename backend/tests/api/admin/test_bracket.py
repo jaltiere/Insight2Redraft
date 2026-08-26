@@ -38,15 +38,48 @@ def test_generate_requires_super_admin(client, seed, make_account):
     ).status_code == 403
 
 
-def test_generate_success(client, admin_headers, seed):
+def _generate(client, admin_headers, db_session, seed):
     season = _playoff_season_4(seed)
-    resp = client.post(f"/admin/seasons/{season.id}/bracket", headers=admin_headers)
+    return client.post(f"/admin/seasons/{season.id}/bracket", headers=admin_headers)
+
+
+def test_generate_success(client, admin_headers, db_session, seed):
+    resp = _generate(client, admin_headers, db_session, seed)
     assert resp.status_code == 201
     body = resp.json()
     assert body["status"] == "pending"
     assert body["size"] == 4
     assert len(body["seeds"]) == 4
     assert len([m for m in body["matchups"] if not m["bye"]]) == 2
+
+
+def test_generated_bracket_resolves_team_names_and_owners(
+    client, admin_headers, db_session, seed
+):
+    # a generated bracket must be reviewable by a human: seeds and matchups
+    # carry league names and owners, not bare ids
+    resp = _generate(client, admin_headers, db_session, seed)
+
+    assert resp.status_code == 201
+    body = resp.json()
+
+    first_seed = body["seeds"][0]
+    assert set(first_seed) == {"seed", "team_id", "qualified_via", "league_name", "owner"}
+    assert isinstance(first_seed["league_name"], str) and first_seed["league_name"]
+
+    played = [m for m in body["matchups"] if not m["bye"]]
+    assert played, "expected at least one non-bye matchup"
+    ref = played[0]["team_a"]
+    assert set(ref) == {"team_id", "seed", "league_name", "owner"}
+    assert ref["seed"] >= 1
+    assert "team_a_id" not in played[0] and "team_b_id" not in played[0]
+
+
+def test_bye_matchup_has_null_team_b(client, admin_headers, db_session, seed):
+    resp = _generate(client, admin_headers, db_session, seed)
+    byes = [m for m in resp.json()["matchups"] if m["bye"]]
+    if byes:
+        assert byes[0]["team_b"] is None
 
 
 def test_generate_season_not_playoffs_409(client, admin_headers, seed):

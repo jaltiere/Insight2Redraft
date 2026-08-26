@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.public_schemas import BracketTeamRef, OwnerRef as BracketOwnerRef
 from app.models import AccountRole, BracketStatus, QualifiedVia, SeasonStatus
 
 
@@ -158,21 +159,19 @@ class GrantCreate(BaseModel):
 
 
 class BracketSeedAdmin(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     seed: int
     team_id: int
     qualified_via: QualifiedVia
+    league_name: str
+    owner: BracketOwnerRef | None
 
 
 class BracketMatchupAdmin(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     round: int
     nfl_week: int
-    team_a_id: int | None
-    team_b_id: int | None
+    team_a: BracketTeamRef | None
+    team_b: BracketTeamRef | None
     team_a_score: float | None
     team_b_score: float | None
     winner_team_id: int | None

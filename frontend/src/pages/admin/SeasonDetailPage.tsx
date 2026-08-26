@@ -36,7 +36,10 @@ export function SeasonDetailPage() {
         <h1 className="text-2xl font-bold tracking-tight">Season {season.year}</h1>
         <Badge variant="secondary">{season.status}</Badge>
         {isSuper && (
-          <span className="ml-auto">
+          <span className="ml-auto flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/admin/seasons/${season.id}/bracket`}>Manage bracket</Link>
+            </Button>
             <SeasonFormDialog season={season} trigger={<Button variant="outline">Edit</Button>} />
           </span>
         )}
